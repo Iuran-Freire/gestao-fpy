@@ -4,19 +4,23 @@ export async function createBackup() {
     b = bucket(),
     day = new Date().toISOString().slice(0, 10),
     marker = "backups/" + day + "/manifest.json";
-  if (await b.head(marker)) return { date: day, existing: true };
+  const previous = await b.get(marker);
+  if (previous && (await previous.json<{ version: number }>()).version === 2) return { date: day, existing: true };
   const run = crypto.randomUUID(),
     prefix = "backups/" + day + "/" + run + "/",
     files: string[] = [];
   const start = await db
-    .prepare("SELECT MAX(rowid) AS n FROM operations")
-    .first<{ n: number }>();
+    .prepare("SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u")
+    .first<{ n: number; u: number }>();
   for (const table of [
     "records",
     "users",
     "ownership",
     "operations",
     "audit",
+    "credentials",
+    "login_handles",
+    "user_audit",
   ]) {
     let cursor = 0,
       page = 0;
@@ -37,16 +41,16 @@ export async function createBackup() {
     }
   }
   const end = await db
-    .prepare("SELECT MAX(rowid) AS n FROM operations")
-    .first<{ n: number }>();
-  if (start?.n !== end?.n) {
+    .prepare("SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u")
+    .first<{ n: number; u: number }>();
+  if (start?.n !== end?.n || start?.u !== end?.u) {
     await b.delete(files);
     throw Error("Novos lançamentos durante o backup. Tente novamente.");
   }
   await b.put(
     marker,
     JSON.stringify({
-      version: 1,
+      version: 2,
       date: day,
       createdAt: new Date().toISOString(),
       files,

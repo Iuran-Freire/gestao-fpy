@@ -726,3 +726,4 @@ label input {
     padding-bottom: 30px;
   }
 }
+.wide-field{grid-column:1/-1}.audit-fields{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;background:#f4f6f8;padding:12px;border-radius:6px}.user-toolbar{display:flex;gap:8px;flex-wrap:wrap}.user-toolbar button{min-height:36px;padding:6px 10px}.row-actions{flex-wrap:wrap}.row-actions .secondary{min-height:38px;padding:8px 10px}

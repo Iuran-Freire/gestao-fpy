@@ -5,6 +5,11 @@ export type User = {
   email: string;
   role: Role;
   owner: number;
+  username?: string | null;
+  active?: number;
+  revision?: number;
+  mustChange?: boolean;
+  hasPassword?: boolean;
 };
 export type Entry = {
   id: string;

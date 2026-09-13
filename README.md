@@ -23,7 +23,11 @@ Semana ISO (segunda a domingo) derivada da data. Na virada do ano, o ano ISO pod
 
 ## Acesso
 
-A autenticação usa o login individual disponibilizado pelo Sites (ChatGPT). O primeiro acesso da publicação privada inicial configura o responsável pelo sistema. Novos usuários autorizados a acessar a publicação entram como operadores; o responsável pode atribuir perfis em Gestão. Antes de liberar acesso à equipe, o dono deve realizar o primeiro acesso. A publicação não torna dados públicos nem concede acesso à equipe automaticamente.
+O FPY aceita usuário ou e-mail e senha. Gestão permite criar, editar, redefinir senha e desativar/reativar contas preservando o histórico. O administrador principal atribui níveis; líderes, supervisores e técnicas gerenciam operadores. A própria conta principal não pode ser desativada. Cada alteração mantém auditoria.
+
+A publicação continua privada no Sites (ChatGPT): cadastrar alguém no FPY não libera essa barreira externa. O primeiro responsável mantém recuperação pela identidade original do Sites. Para configurar suas credenciais, define o usuário em Meu perfil e depois acessa Minha senha. Outras contas recebem senha temporária com troca obrigatória no primeiro acesso.
+
+Senhas de 12–128 caracteres usam scrypt com salt aleatório (N=16384, r=8, p=5). Cookies HttpOnly/SameSite=Strict têm validade de 12 horas, Secure em HTTPS. Apenas o hash do token fica no banco; alterações de cadastro e senha invalidam sessões. Login tem limites por identificador e IP. Senhas não são armazenadas em texto puro nem no cache offline.
 
 A prévia local simula uma conta, conforme o starter. Essa simulação não é incluída no build publicado. Não implementar autenticação confiando em cabeçalhos do cliente em outra hospedagem sem um proxy de identidade confiável.
 
@@ -37,7 +41,7 @@ Service worker ativo no build de produção: shell e recursos estáticos em cach
 
 ## Backup — limitação de implantação
 
-Backup manual em Gestão implementado no R2: páginas de 500 registros, manifesto de conclusão, retenção de 12 meses e rejeição da cópia se houver novos lançamentos durante a geração. Os dados de negócio não expiram. Não são armazenadas senhas.
+Backup manual em Gestão implementado no R2: páginas de 500 registros, manifesto de conclusão, retenção de 12 meses e rejeição da cópia se houver novos lançamentos ou alterações de usuários durante a geração. Os dados de negócio não expiram. Inclui hashes protegidos de senhas, cadastros e auditoria; exclui sessões e tentativas de login. O arquivo deve permanecer restrito ao administrador.
 
 **O agendamento diário independente de acesso ainda não foi ativado.** A hospedagem Sites disponível não expõe configuração de cron nas ferramentas desta sessão. Não considerar o requisito de backup diário concluído até configurar um agendador suportado com autenticação de serviço e testar restauração. A API atual de backup requer o usuário responsável autenticado; não expor essa rota publicamente para um agendador.
 
@@ -50,9 +54,10 @@ O manifesto lista todos os objetos JSON de um backup completo. Para restauraçã
 - `npm run build`: build de produção.
 - `node --test tests/fpy.test.mjs`: regras de cálculo e validação.
 - `node tests/api-local.mjs`: integração contra prévia local; cria somente registros fictícios identificados como QA.
+- `node tests/users-local.mjs`: contas fictícias, login, permissões, edição, desativação, redefinição e revogação de sessões.
 - `npx tsc --noEmit`: verificação TypeScript.
 
-Para banco local, aplicar a migração `drizzle/0000_spicy_kulan_gath.sql` com Wrangler usando `dist/server/wrangler.json` e `.wrangler/state`. Não repetir migrações aplicadas. O banco local e os registros QA não são publicados.
+Para banco local, aplicar as migrações de `drizzle/` em ordem com Wrangler usando `dist/server/wrangler.json` e `.wrangler/state`. Não repetir migrações aplicadas. O banco local e os registros QA não são publicados.
 
 ## Pendências externas
 

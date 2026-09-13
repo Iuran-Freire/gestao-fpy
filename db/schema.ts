@@ -12,6 +12,39 @@ export const users = sqliteTable("users", {
   name: text("name").notNull(),
   role: text("role").notNull().default("operador"),
   owner: integer("owner").notNull().default(0),
+  username: text("username"),
+  active: integer("active").notNull().default(1),
+  revision: integer("revision").notNull().default(1),
+});
+export const credentials = sqliteTable("credentials", {
+  userId: text("user_id").primaryKey(),
+  hash: text("hash").notNull(),
+  mustChange: integer("must_change").notNull().default(1),
+});
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    token: text("token").primaryKey(),
+    userId: text("user_id").notNull(),
+    expires: integer("expires").notNull(),
+    userRevision: integer("user_revision").notNull().default(1),
+    credentialHash: text("credential_hash").notNull().default(""),
+  },
+  (t) => [index("sessions_user").on(t.userId)],
+);
+export const loginAttempts = sqliteTable("login_attempts", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  until: integer("until").notNull(),
+});
+export const userAudit = sqliteTable("user_audit", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  target: text("target").notNull(),
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
+  before: text("before"),
+  after: text("after"),
+  at: text("at").notNull(),
 });
 export const ownership = sqliteTable("ownership", {
   id: integer("id").primaryKey(),
@@ -66,4 +99,9 @@ export const audit = sqliteTable(
     at: text("at").notNull(),
   },
   (t) => [index("audit_record").on(t.recordId)],
+);
+export const loginHandles = sqliteTable(
+  "login_handles",
+  { handle: text("handle").primaryKey(), userId: text("user_id").notNull() },
+  (t) => [index("login_handles_user").on(t.userId)],
 );

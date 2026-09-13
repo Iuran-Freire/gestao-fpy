@@ -48,6 +48,8 @@ import {
 } from "@/src/domain/fpy";
 import { fetchJson } from "@/src/infrastructure/offline";
 import { Choice, EntryForm } from "./entry-form";
+import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
+import Login from "./login";
 const percent = (v: number | null) =>
   v === null
     ? "—"
@@ -61,6 +63,9 @@ const roleLabel: Record<string, string> = {
 };
 export default function Dashboard() {
   const app = useFpy();
+  const [loginOpen, setLoginOpen] = useState(false),
+    [profileOpen, setProfileOpen] = useState(false),
+    [passwordOpen, setPasswordOpen] = useState(false);
   const [tab, setTab] = useState("fpy"),
     [form, setForm] = useState<{
       kind: "production" | "defect";
@@ -297,8 +302,34 @@ export default function Dashboard() {
               <>
                 <span>
                   {app.local.user.name}
-                  <small>{roleLabel[app.local.user.role]}</small>
+                  <small>
+                    {app.local.user.owner
+                      ? "Administrador principal"
+                      : roleLabel[app.local.user.role]}
+                  </small>
                 </span>
+                <div className="user-toolbar">
+                  <button
+                    className="secondary"
+                    disabled={!app.online}
+                    onClick={() => setProfileOpen(true)}
+                  >
+                    Meu perfil
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={!app.online || !app.local.user.username}
+                    onClick={() => setPasswordOpen(true)}
+                  >
+                    Minha senha
+                  </button>
+                  <button
+                    className="secondary"
+                    onClick={() => setLoginOpen(true)}
+                  >
+                    Trocar conta
+                  </button>
+                </div>
                 <button
                   className="icon-button"
                   aria-label="Sair da conta"
@@ -347,9 +378,12 @@ export default function Dashboard() {
           <div role="status" className="notice">
             {app.message}
             {app.local && /conta|sessão/i.test(app.message) && (
-              <a href="/signin-with-chatgpt?return_to=/" target="_top">
+              <button
+                className="text-button"
+                onClick={() => setLoginOpen(true)}
+              >
                 Entrar novamente
-              </a>
+              </button>
             )}
             <button
               className="text-button"
@@ -372,13 +406,9 @@ export default function Dashboard() {
                 Use sua conta individual para consultar e registrar os dados.
               </p>
             </div>
-            <a
-              className="button"
-              href="/signin-with-chatgpt?return_to=/"
-              target="_top"
-            >
-              Entrar com ChatGPT
-            </a>
+            <button onClick={() => setLoginOpen(true)}>
+              Entrar com usuário e senha
+            </button>
           </div>
         )}
         {app.local && !app.local.years[app.year] && (
@@ -428,7 +458,7 @@ export default function Dashboard() {
             <TabsTrigger value="defects">Defeitos</TabsTrigger>
             <TabsTrigger value="production">Produção</TabsTrigger>
             <TabsTrigger value="sync">Sincronização</TabsTrigger>
-            {app.local?.user.owner === 1 && (
+            {app.local && canCorrect(app.local.user.role) && (
               <TabsTrigger value="admin">Gestão</TabsTrigger>
             )}
           </TabsList>
@@ -688,93 +718,54 @@ export default function Dashboard() {
             </section>
           </TabsContent>
           <TabsContent value="admin">
-            <section className="panel">
-              <div className="panel-head">
-                <h2>
-                  <ShieldCheck size={19} /> Acessos individuais
-                </h2>
-                <button
-                  className="secondary"
-                  disabled={adminBusy || !app.online}
-                  onClick={() =>
-                    admin(async () => setUsers(await fetchJson("/api/users")))
-                  }
-                >
-                  Carregar usuários
-                </button>
-              </div>
-              <div className="panel-body">
-                <p>
-                  Novos usuários entram como operadores. O responsável pelo
-                  sistema atribui os perfis de correção após o primeiro acesso.
-                </p>
-                {users.map((u) => (
-                  <div key={u.id} className="user-row">
-                    <span>
-                      <b>{u.name}</b>
-                      <small className="cell-sub">{u.email}</small>
-                    </span>
-                    {u.owner ? (
-                      <span className="badge">Responsável</span>
-                    ) : (
-                      <Choice
-                        label="Perfil"
-                        value={u.role}
-                        onChange={(v) =>
-                          admin(async () => {
-                            await fetchJson("/api/users", {
-                              method: "POST",
-                              body: JSON.stringify({ id: u.id, role: v }),
-                            });
-                            setUsers(await fetchJson("/api/users"));
-                          })
-                        }
-                        items={Object.entries(roleLabel).map(
-                          ([value, label]) => ({ value, label }),
-                        )}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-            <section className="panel backup-panel">
-              <div className="panel-head">
-                <h2>Backup · retenção de 12 meses</h2>
-                <button
-                  disabled={adminBusy || !app.online}
-                  onClick={() =>
-                    admin(async () => {
-                      const r = await fetchJson("/api/backups", {
-                        method: "POST",
-                      });
-                      setBackup(r.date);
-                    })
-                  }
-                >
-                  Criar backup agora
-                </button>
-              </div>
-              <div className="panel-body">
-                <p>
-                  O backup manual está disponível. O agendamento diário ainda
-                  precisa ser configurado no ambiente de hospedagem.
-                </p>
-                {backup && (
-                  <p role="status">
-                    Backup de {backup} disponível.{" "}
-                    <a
-                      className="text-button"
-                      href={"/api/backups?date=" + backup}
-                      download
-                    >
-                      Baixar cópia
-                    </a>
+            {app.local && (
+              <UserManagement
+                actor={app.local.user}
+                online={app.online}
+                onUpdated={() => void app.sync()}
+              />
+            )}
+            {app.local?.user.owner === 1 && (
+              <section className="panel backup-panel">
+                <div className="panel-head">
+                  <h2>Backup · retenção de 12 meses</h2>
+                  <button
+                    disabled={adminBusy || !app.online}
+                    onClick={() =>
+                      admin(async () => {
+                        const r = await fetchJson("/api/backups", {
+                          method: "POST",
+                        });
+                        setBackup(r.date);
+                      })
+                    }
+                  >
+                    Criar backup agora
+                  </button>
+                </div>
+                <div className="panel-body">
+                  <p>
+                    O backup manual está disponível. O agendamento diário ainda
+                    precisa ser configurado no ambiente de hospedagem.
                   </p>
-                )}
-                <p>Os dados do sistema não são apagados ao completar um ano.</p>
-              </div>
-            </section>
+                  {backup && (
+                    <p role="status">
+                      Backup de {backup} disponível.{" "}
+                      <a
+                        className="text-button"
+                        href={"/api/backups?date=" + backup}
+                        download
+                      >
+                        Baixar cópia
+                      </a>
+                    </p>
+                  )}
+                  <p>
+                    Os dados do sistema não são apagados ao completar um ano.
+                  </p>
+                </div>
+              </section>
+            )}
           </TabsContent>
         </Tabs>
         <p className="footnote">
@@ -783,6 +774,27 @@ export default function Dashboard() {
           conforme novos registros são informados.
         </p>
       </section>
+      {loginOpen && (
+        <Login
+          onClose={() => setLoginOpen(false)}
+          onSuccess={() => void app.sync()}
+        />
+      )}
+      {profileOpen && app.local && (
+        <UserEditor
+          actor={app.local.user}
+          target={app.local.user}
+          onClose={() => setProfileOpen(false)}
+          onSaved={() => void app.sync()}
+        />
+      )}
+      {(passwordOpen || app.local?.user.mustChange) && app.local && (
+        <PasswordEditor
+          user={app.local.user}
+          onClose={() => setPasswordOpen(false)}
+          onSaved={() => void app.sync()}
+        />
+      )}
       {form && app.local && (
         <EntryForm
           key={form.entry?.id || form.kind}

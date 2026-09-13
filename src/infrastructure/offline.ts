@@ -44,7 +44,11 @@ export async function fetchJson(url: string, init?: RequestInit): Promise<any> {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
     cache: "no-store",
-  }).catch(() => { throw new Error("Sem resposta do servidor. Os lançamentos pendentes continuam salvos neste dispositivo."); });
+  }).catch(() => {
+    throw new Error(
+      "Sem resposta do servidor. Os lançamentos pendentes continuam salvos neste dispositivo.",
+    );
+  });
   if (!r.ok) {
     const body: any = await r
       .json()

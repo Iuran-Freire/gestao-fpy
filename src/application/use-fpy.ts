@@ -44,6 +44,12 @@ export function useFpy() {
         }
         if (!s) s = { user, years: {}, pending: [] };
         s.user = user;
+        await writeLocal(s);
+        if (user.mustChange) {
+          setLocal({ ...s });
+          setMessage("Troque a senha temporária para continuar.");
+          return;
+        }
         for (const pending of [...s.pending]) {
           try {
             await fetchJson("/api/records", {
@@ -177,13 +183,17 @@ export function useFpy() {
     });
   }
   async function logout() {
-    if (local?.pending.length) {
-      setMessage("Sincronize os lançamentos pendentes antes de sair.");
-      return;
+    try {
+      await locked(async () => {
+        const current = await readLocal();
+        if (current?.pending.length) throw Error("Sincronize os lançamentos pendentes antes de sair.");
+        await fetchJson("/api/auth/logout", { method: "POST" });
+        await writeLocal(null);
+        setLocal(null);
+      });
+    } catch (e) {
+      setMessage((e as Error).message);
     }
-    await writeLocal(null);
-    setLocal(null);
-    location.assign("/signout-with-chatgpt?return_to=/");
   }
   return {
     local,
