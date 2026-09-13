@@ -19,7 +19,9 @@ function role(value) {
     [
       ...cli,
       "--command",
-      "UPDATE users SET revision=revision+1,role='" + value + "' WHERE id='local_seedy'",
+      "UPDATE users SET revision=revision+1,role='" +
+        value +
+        "' WHERE id='local_seedy'",
     ],
     { encoding: "utf8" },
   );

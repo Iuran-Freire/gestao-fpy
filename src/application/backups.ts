@@ -5,12 +5,15 @@ export async function createBackup() {
     day = new Date().toISOString().slice(0, 10),
     marker = "backups/" + day + "/manifest.json";
   const previous = await b.get(marker);
-  if (previous && (await previous.json<{ version: number }>()).version === 2) return { date: day, existing: true };
+  if (previous && (await previous.json<{ version: number }>()).version === 2)
+    return { date: day, existing: true };
   const run = crypto.randomUUID(),
     prefix = "backups/" + day + "/" + run + "/",
     files: string[] = [];
   const start = await db
-    .prepare("SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u")
+    .prepare(
+      "SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u",
+    )
     .first<{ n: number; u: number }>();
   for (const table of [
     "records",
@@ -41,7 +44,9 @@ export async function createBackup() {
     }
   }
   const end = await db
-    .prepare("SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u")
+    .prepare(
+      "SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u",
+    )
     .first<{ n: number; u: number }>();
   if (start?.n !== end?.n || start?.u !== end?.u) {
     await b.delete(files);

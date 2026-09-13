@@ -186,7 +186,8 @@ export function useFpy() {
     try {
       await locked(async () => {
         const current = await readLocal();
-        if (current?.pending.length) throw Error("Sincronize os lançamentos pendentes antes de sair.");
+        if (current?.pending.length)
+          throw Error("Sincronize os lançamentos pendentes antes de sair.");
         await fetchJson("/api/auth/logout", { method: "POST" });
         await writeLocal(null);
         setLocal(null);

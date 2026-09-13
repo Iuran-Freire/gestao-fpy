@@ -27,7 +27,7 @@ O FPY aceita usuário ou e-mail e senha. Gestão permite criar, editar, redefini
 
 A publicação continua privada no Sites (ChatGPT): cadastrar alguém no FPY não libera essa barreira externa. O primeiro responsável mantém recuperação pela identidade original do Sites. Para configurar suas credenciais, define o usuário em Meu perfil e depois acessa Minha senha. Outras contas recebem senha temporária com troca obrigatória no primeiro acesso.
 
-Senhas de 12–128 caracteres usam scrypt com salt aleatório (N=16384, r=8, p=5). Cookies HttpOnly/SameSite=Strict têm validade de 12 horas, Secure em HTTPS. Apenas o hash do token fica no banco; alterações de cadastro e senha invalidam sessões. Login tem limites por identificador e IP. Senhas não são armazenadas em texto puro nem no cache offline.
+Senhas não vazias aceitam livremente tamanho e combinação de caracteres, sem exigir letras, números ou símbolos. Um limite técnico amplo de 4.096 caracteres protege o serviço contra entradas abusivas. As senhas usam scrypt com salt aleatório (N=16384, r=8, p=5). Cookies HttpOnly/SameSite=Strict têm validade de 12 horas, Secure em HTTPS. Apenas o hash do token fica no banco; alterações de cadastro e senha invalidam sessões. Login tem limites por identificador e IP. Senhas não são armazenadas em texto puro nem no cache offline.
 
 A prévia local simula uma conta, conforme o starter. Essa simulação não é incluída no build publicado. Não implementar autenticação confiando em cabeçalhos do cliente em outra hospedagem sem um proxy de identidade confiável.
 

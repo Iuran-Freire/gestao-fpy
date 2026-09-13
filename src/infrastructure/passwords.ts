@@ -7,10 +7,10 @@ import {
 export function passwordHash(password: string) {
   if (
     typeof password !== "string" ||
-    password.length < 12 ||
-    password.length > 128
+    password.length < 1 ||
+    password.length > 4096
   )
-    throw Error("A senha deve ter entre 12 e 128 caracteres.");
+    throw Error("Informe uma senha.");
   const salt = randomBytes(16).toString("hex");
   return (
     "scrypt-16384-8-5$" +
@@ -25,7 +25,12 @@ export function passwordHash(password: string) {
   );
 }
 export function verifyPassword(password: string, stored: string) {
-  if (typeof password !== "string" || password.length > 128) return false;
+  if (
+    typeof password !== "string" ||
+    password.length < 1 ||
+    password.length > 4096
+  )
+    return false;
   const [scheme, salt, hash] = stored.split("$");
   if (scheme !== "scrypt-16384-8-5" || !salt || !hash) return false;
   const value = scryptSync(password, salt, 32, {

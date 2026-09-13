@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       typeof body.login !== "string" ||
       body.login.length > 254 ||
       typeof body.password !== "string" ||
-      body.password.length > 128
+      body.password.length > 4096
     )
       throw new HttpError(400, "Informe usuário/e-mail e senha.");
     const login = body.login.trim().toLowerCase(),

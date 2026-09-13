@@ -165,15 +165,13 @@ export function UserEditor({
                 <input
                   type="password"
                   required
-                  minLength={12}
-                  maxLength={128}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
                 />
                 <small className="cell-sub">
-                  12 a 128 caracteres. Entregue a senha ao usuário por um canal
-                  seguro.
+                  Pode ter qualquer quantidade ou combinação de caracteres.
+                  Entregue a senha ao usuário por um canal seguro.
                 </small>
               </label>
             )}
@@ -275,7 +273,7 @@ export function PasswordEditor({
               ? "Defina uma senha temporária para " +
                 user.name +
                 ". As sessões existentes serão encerradas."
-              : "Use uma senha de 12 a 128 caracteres. Nunca reutilize a senha de outro serviço."}
+              : "Escolha livremente o tamanho e os caracteres da senha."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={save}>
@@ -286,7 +284,6 @@ export function PasswordEditor({
                 type="password"
                 required
                 autoComplete="current-password"
-                maxLength={128}
                 value={old}
                 onChange={(e) => setOld(e.target.value)}
               />
@@ -297,8 +294,6 @@ export function PasswordEditor({
             <input
               type="password"
               required
-              minLength={12}
-              maxLength={128}
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -309,8 +304,6 @@ export function PasswordEditor({
             <input
               type="password"
               required
-              minLength={12}
-              maxLength={128}
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

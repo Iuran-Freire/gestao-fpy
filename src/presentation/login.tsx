@@ -80,7 +80,6 @@ export default function Login({
             <input
               required
               type="password"
-              maxLength={128}
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
