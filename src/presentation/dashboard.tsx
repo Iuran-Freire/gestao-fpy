@@ -729,7 +729,7 @@ export default function Dashboard() {
                 onUpdated={() => void app.sync()}
               />
             )}
-            {app.local?.user.owner === 1 && (
+            {app.local?.user.owner === 1 && app.local.user.backupAvailable && (
               <section className="panel backup-panel">
                 <div className="panel-head">
                   <h2>Backup · retenção de 12 meses</h2>

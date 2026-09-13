@@ -2,6 +2,8 @@
 
 Sistema PWA de produção e defeitos, com consulta anual e fila offline. A implantação inicial é privada.
 
+Há também uma configuração independente em `wrangler.cloudflare.jsonc` para implantação na conta Cloudflare do proprietário. Ela usa o login próprio do FPY e não depende da conta ChatGPT. O D1 mantém os dados; o botão de backup só aparece quando um bucket R2 está vinculado.
+
 ## Organização do código
 
 - `src/domain/fpy.ts`: entidades, validação, chave de produção, semana ISO e FPY ponderado. Sem dependência de interface ou banco.

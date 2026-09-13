@@ -10,6 +10,7 @@ export type User = {
   revision?: number;
   mustChange?: boolean;
   hasPassword?: boolean;
+  backupAvailable?: boolean;
 };
 export type Entry = {
   id: string;

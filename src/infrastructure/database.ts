@@ -9,3 +9,7 @@ export function bucket(): R2Bucket {
   if (!b) throw Error("Backup indisponível.");
   return b;
 }
+
+export function bucketAvailable() {
+  return !!(env as unknown as { BUCKET?: R2Bucket }).BUCKET;
+}
