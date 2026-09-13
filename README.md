@@ -21,6 +21,8 @@ Operadores lançam. Supervisor, líder e técnica corrigem. Toda correção exig
 
 Semana ISO (segunda a domingo) derivada da data. Na virada do ano, o ano ISO pode diferir do ano civil; a consulta anual usa a data civil. Não há fechamento de turno.
 
+As abas FPY, Defeitos e Produção exportam CSV com somente os registros abrangidos pelos filtros atuais. O arquivo usa ponto e vírgula, cabeçalhos em português e codificação UTF-8 compatível com Excel.
+
 ## Acesso
 
 O FPY aceita usuário ou e-mail e senha. Gestão permite criar, editar, redefinir senha e desativar/reativar contas preservando o histórico. O administrador principal atribui níveis; líderes, supervisores e técnicas gerenciam operadores. A própria conta principal não pode ser desativada. Cada alteração mantém auditoria.

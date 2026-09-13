@@ -48,11 +48,13 @@ export function UserEditor({
   actor,
   onClose,
   onSaved,
+  onPassword,
 }: {
   target?: User;
   actor: User;
   onClose: () => void;
   onSaved: () => void;
+  onPassword?: () => void;
 }) {
   const [name, setName] = useState(target?.name || ""),
     [username, setUsername] = useState(target?.username || ""),
@@ -182,6 +184,16 @@ export function UserEditor({
             </p>
           )}
           <div className="form-footer">
+            {target?.username && onPassword && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={onPassword}
+                disabled={busy}
+              >
+                <KeyRound size={16} /> Alterar senha
+              </button>
+            )}
             <button
               type="button"
               className="secondary"

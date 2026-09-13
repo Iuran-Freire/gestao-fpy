@@ -7,7 +7,6 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
-  LogOut,
   Pencil,
   History,
   Download,
@@ -47,6 +46,7 @@ import {
   type User,
 } from "@/src/domain/fpy";
 import { fetchJson } from "@/src/infrastructure/offline";
+import { createCsvExport, downloadCsv } from "@/src/application/csv";
 import { Choice, EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
@@ -167,6 +167,17 @@ export default function Dashboard() {
     .filter((e) => e.kind === "defect")
     .forEach((e) => codes.set(e.code, (codes.get(e.code) || 0) + e.quantity));
   const pareto = [...codes].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  function exportSelectedTable() {
+    if (!["fpy", "defects", "production"].includes(tab)) return;
+    const result = createCsvExport(
+      tab as "fpy" | "defects" | "production",
+      entries,
+      groups,
+      pendingIds,
+      app.year,
+    );
+    downloadCsv(result.filename, result.content);
+  }
   const recordTable = (kind: "production" | "defect") => {
     const list = entries.filter((e) => e.kind === kind);
     return (
@@ -318,25 +329,11 @@ export default function Dashboard() {
                   </button>
                   <button
                     className="secondary"
-                    disabled={!app.online || !app.local.user.username}
-                    onClick={() => setPasswordOpen(true)}
-                  >
-                    Minha senha
-                  </button>
-                  <button
-                    className="secondary"
                     onClick={() => setLoginOpen(true)}
                   >
                     Trocar conta
                   </button>
                 </div>
-                <button
-                  className="icon-button"
-                  aria-label="Sair da conta"
-                  onClick={app.logout}
-                >
-                  <LogOut size={17} />
-                </button>
               </>
             )}
             {install && (
@@ -547,6 +544,13 @@ export default function Dashboard() {
                 }}
               >
                 Limpar filtros
+              </button>
+              <button
+                className="secondary export-button"
+                onClick={exportSelectedTable}
+                disabled={!app.local}
+              >
+                <Download size={17} /> Exportar CSV
               </button>
             </div>
           )}
@@ -786,6 +790,10 @@ export default function Dashboard() {
           target={app.local.user}
           onClose={() => setProfileOpen(false)}
           onSaved={() => void app.sync()}
+          onPassword={() => {
+            setProfileOpen(false);
+            setPasswordOpen(true);
+          }}
         />
       )}
       {(passwordOpen || app.local?.user.mustChange) && app.local && (
