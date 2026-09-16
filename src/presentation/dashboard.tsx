@@ -485,7 +485,7 @@ export default function Dashboard() {
               )}
             </>}
           </TabsList>}
-          {(area === "fpy" || area === "dashboard") && (
+          {area === "fpy" && (
             <div className="filters panel">
               <Choice
                 label="Ano"
@@ -581,7 +581,14 @@ export default function Dashboard() {
             </div>
           )}
           {area === "dashboard" && (
-            <AnalyticsDashboard entries={entries} groups={groups} />
+            <AnalyticsDashboard
+              entries={app.entries}
+              year={app.year}
+              onYearChange={(value) => {
+                app.setYear(value);
+                setTimeout(() => app.sync(), 0);
+              }}
+            />
           )}
           <TabsContent value="fpy" hidden={area !== "fpy"}>
             <section className="panel">
