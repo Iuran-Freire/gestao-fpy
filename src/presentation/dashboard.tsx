@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
-  Activity,
   Plus,
   Factory,
   RefreshCw,
@@ -10,9 +9,10 @@ import {
   Pencil,
   History,
   Download,
-  ShieldCheck,
   Database,
-  AlertTriangle,
+  BarChart3,
+  ClipboardList,
+  Settings,
 } from "lucide-react";
 import {
   Table,
@@ -39,17 +39,16 @@ import {
 import { useFpy } from "@/src/application/use-fpy";
 import {
   summarize,
-  totalFpy,
   isoWeek,
   canCorrect,
   type Entry,
-  type User,
 } from "@/src/domain/fpy";
 import { fetchJson } from "@/src/infrastructure/offline";
 import { createCsvExport, downloadCsv } from "@/src/application/csv";
 import { Choice, EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
+import AnalyticsDashboard from "./analytics-dashboard";
 const percent = (v: number | null) =>
   v === null
     ? "—"
@@ -61,12 +60,23 @@ const roleLabel: Record<string, string> = {
   lider: "Líder",
   tecnica: "Técnica",
 };
+type InstallPrompt = Event & { prompt: () => Promise<void> };
+type HistoryItem = {
+  id: string;
+  actor: string;
+  at: string;
+  reason: string;
+  before: string;
+  after: string;
+};
 export default function Dashboard() {
   const app = useFpy();
   const [loginOpen, setLoginOpen] = useState(false),
     [profileOpen, setProfileOpen] = useState(false),
     [passwordOpen, setPasswordOpen] = useState(false);
-  const [tab, setTab] = useState("fpy"),
+  const [area, setArea] = useState<"fpy" | "dashboard" | "management">("fpy"),
+    [tab, setTab] = useState("fpy"),
+    [managementTab, setManagementTab] = useState("sync"),
     [form, setForm] = useState<{
       kind: "production" | "defect";
       entry?: Entry;
@@ -78,9 +88,8 @@ export default function Dashboard() {
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [limit, setLimit] = useState(100),
-    [users, setUsers] = useState<User[]>([]),
-    [history, setHistory] = useState<unknown[] | null>(null),
-    [install, setInstall] = useState<any>(null),
+    [history, setHistory] = useState<HistoryItem[] | null>(null),
+    [install, setInstall] = useState<InstallPrompt | null>(null),
     [backup, setBackup] = useState(""),
     [adminBusy, setAdminBusy] = useState(false),
     [discardId, setDiscardId] = useState<string | null>(null);
@@ -139,15 +148,12 @@ export default function Dashboard() {
       (!to || e.date <= to),
   );
   const groups = summarize(contexts),
-    production = groups.reduce((s, g) => s + (g.production || 0), 0),
-    defects = groups.reduce((s, g) => s + g.defects, 0),
-    fpy = totalFpy(groups),
     pendingIds = new Set(app.local?.pending.map((p) => p.mutation.entry.id));
   const lines = [...new Set(app.entries.map((e) => e.line))].sort(),
     canEdit = app.local && canCorrect(app.local.user.role);
   async function showHistory(e: Entry) {
     try {
-      setHistory(await fetchJson("/api/history?id=" + e.id));
+      setHistory((await fetchJson("/api/history?id=" + e.id)) as HistoryItem[]);
     } catch (err) {
       app.setMessage((err as Error).message);
     }
@@ -296,6 +302,39 @@ export default function Dashboard() {
           QUALIDADE <b>Gestão de FPY</b>
         </span>
       </header>
+      <nav className="primary-navigation" aria-label="Navegação principal">
+        <div>
+          <button
+            className={area === "fpy" ? "active" : ""}
+            onClick={() => {
+              setArea("fpy");
+              if (!["fpy", "defects", "production"].includes(tab)) setTab("fpy");
+            }}
+          >
+            <ClipboardList size={19} /> <span>FPY</span>
+          </button>
+          <button
+            className={area === "dashboard" ? "active" : ""}
+            onClick={() => setArea("dashboard")}
+          >
+            <BarChart3 size={19} /> <span>Dashboard</span>
+          </button>
+          <button
+            className={area === "management" ? "active" : ""}
+            onClick={() => {
+              setArea("management");
+              setTab(managementTab);
+            }}
+          >
+            <Settings size={19} /> <span>Gestão</span>
+            {!!app.local?.pending.length && (
+              <i aria-label={`${app.local.pending.length} envios pendentes`}>
+                {app.local.pending.length}
+              </i>
+            )}
+          </button>
+        </div>
+      </nav>
       <section className="content">
         <div className="statusbar">
           <span className={"connection " + (!app.online ? "offline" : "")}>
@@ -352,10 +391,22 @@ export default function Dashboard() {
         <div className="heading">
           <div>
             <p className="eyebrow">CONTROLE DE QUALIDADE</p>
-            <h1>Visão da operação</h1>
-            <p>Produção e qualidade, do primeiro ao terceiro turno.</p>
+            <h1>
+              {area === "fpy"
+                ? "Registros de FPY"
+                : area === "dashboard"
+                  ? "Indicadores da operação"
+                  : "Gestão do sistema"}
+            </h1>
+            <p>
+              {area === "fpy"
+                ? "Consulte e registre produção e defeitos por turno."
+                : area === "dashboard"
+                  ? "Acompanhe produção, defeitos e rendimento em uma visão consolidada."
+                  : "Controle a sincronização, os usuários e a segurança dos dados."}
+            </p>
           </div>
-          <div className="actions">
+          {area === "fpy" && <div className="actions">
             <button
               className="secondary"
               disabled={!app.local}
@@ -369,7 +420,7 @@ export default function Dashboard() {
             >
               <Plus size={19} /> Lançar defeitos
             </button>
-          </div>
+          </div>}
         </div>
         {app.message && (
           <div role="status" className="notice">
@@ -414,35 +465,6 @@ export default function Dashboard() {
             e sincronize para consultar o histórico completo.
           </div>
         )}
-        <div className="metrics">
-          <article className="metric highlight">
-            <span>FIRST PASS YIELD</span>
-            <strong>{percent(fpy)}</strong>
-            <p>
-              {groups.some((g) => g.issue)
-                ? "Verifique defeitos acima da produção"
-                : groups.some((g) => g.production === null)
-                  ? "Há grupos aguardando produção"
-                  : "Aprovação na primeira passagem"}
-            </p>
-            <Activity className="metric-icon" />
-          </article>
-          <article className="metric">
-            <span>PRODUÇÃO</span>
-            <strong>{number(production)}</strong>
-            <p>Peças produzidas no período</p>
-          </article>
-          <article className="metric">
-            <span>DEFEITOS</span>
-            <strong>{number(defects)}</strong>
-            <p>Peças reprovadas de primeira</p>
-          </article>
-          <article className="metric">
-            <span>ENVIO PENDENTE</span>
-            <strong>{app.local?.pending.length || 0}</strong>
-            <p>Lançamentos neste dispositivo</p>
-          </article>
-        </div>
         <Tabs
           value={tab}
           onValueChange={(v) => {
@@ -450,16 +472,20 @@ export default function Dashboard() {
             setLimit(100);
           }}
         >
-          <TabsList className="main-tabs">
-            <TabsTrigger value="fpy">Tabela de FPY</TabsTrigger>
-            <TabsTrigger value="defects">Defeitos</TabsTrigger>
-            <TabsTrigger value="production">Produção</TabsTrigger>
-            <TabsTrigger value="sync">Sincronização</TabsTrigger>
-            {app.local && canCorrect(app.local.user.role) && (
-              <TabsTrigger value="admin">Gestão</TabsTrigger>
-            )}
-          </TabsList>
-          {["fpy", "defects", "production"].includes(tab) && (
+          {area !== "dashboard" && <TabsList className="main-tabs">
+            {area === "fpy" && <>
+              <TabsTrigger value="fpy">Tabela de FPY</TabsTrigger>
+              <TabsTrigger value="defects">Defeitos</TabsTrigger>
+              <TabsTrigger value="production">Produção</TabsTrigger>
+            </>}
+            {area === "management" && <>
+              <TabsTrigger value="sync" onClick={() => setManagementTab("sync")}>Sincronização</TabsTrigger>
+              {app.local && canCorrect(app.local.user.role) && (
+                <TabsTrigger value="admin" onClick={() => setManagementTab("admin")}>Usuários e backup</TabsTrigger>
+              )}
+            </>}
+          </TabsList>}
+          {(area === "fpy" || area === "dashboard") && (
             <div className="filters panel">
               <Choice
                 label="Ano"
@@ -523,7 +549,7 @@ export default function Dashboard() {
                 />
               </label>
               <label className="search-field">
-                {tab === "defects"
+                {area === "fpy" && tab === "defects"
                   ? "PN, modelo, código ou posição"
                   : "PN ou modelo"}
                 <input
@@ -545,16 +571,19 @@ export default function Dashboard() {
               >
                 Limpar filtros
               </button>
-              <button
+              {area === "fpy" && <button
                 className="secondary export-button"
                 onClick={exportSelectedTable}
                 disabled={!app.local}
               >
                 <Download size={17} /> Exportar CSV
-              </button>
+              </button>}
             </div>
           )}
-          <TabsContent value="fpy">
+          {area === "dashboard" && (
+            <AnalyticsDashboard entries={entries} groups={groups} />
+          )}
+          <TabsContent value="fpy" hidden={area !== "fpy"}>
             <section className="panel">
               <div className="panel-head">
                 <h2>Rendimento por turno</h2>
@@ -641,7 +670,7 @@ export default function Dashboard() {
               </section>
             )}
           </TabsContent>
-          <TabsContent value="defects">
+          <TabsContent value="defects" hidden={area !== "fpy"}>
             <section className="panel">
               <div className="panel-head">
                 <h2>Lançamentos de defeitos</h2>
@@ -650,7 +679,7 @@ export default function Dashboard() {
               {recordTable("defect")}
             </section>
           </TabsContent>
-          <TabsContent value="production">
+          <TabsContent value="production" hidden={area !== "fpy"}>
             <section className="panel">
               <div className="panel-head">
                 <h2>Totais de produção</h2>
@@ -659,7 +688,7 @@ export default function Dashboard() {
               {recordTable("production")}
             </section>
           </TabsContent>
-          <TabsContent value="sync">
+          <TabsContent value="sync" hidden={area !== "management"}>
             <section className="panel sync-panel">
               <div className="panel-head">
                 <h2>Sincronização e consulta offline</h2>
@@ -721,7 +750,7 @@ export default function Dashboard() {
               </div>
             </section>
           </TabsContent>
-          <TabsContent value="admin">
+          <TabsContent value="admin" hidden={area !== "management"}>
             {app.local && (
               <UserManagement
                 actor={app.local.user}
@@ -828,7 +857,7 @@ export default function Dashboard() {
             </DialogDescription>
           </DialogHeader>
           {history?.length ? (
-            history.map((h: any) => (
+            history.map((h) => (
               <div className="history-item" key={h.id}>
                 <b>
                   {h.actor} · {new Date(h.at).toLocaleString("pt-BR")}
