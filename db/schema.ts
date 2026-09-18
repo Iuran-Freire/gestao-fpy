@@ -67,6 +67,7 @@ export const records = sqliteTable(
     position: text("position").notNull(),
     station: text("station").notNull(),
     category: text("category").notNull(),
+    classCc: text("class_cc").notNull().default(""),
     author: text("author").notNull(),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
@@ -105,3 +106,19 @@ export const loginHandles = sqliteTable(
   { handle: text("handle").primaryKey(), userId: text("user_id").notNull() },
   (t) => [index("login_handles_user").on(t.userId)],
 );
+
+export const catalog = sqliteTable("catalog", {
+  id: text("id").primaryKey(), kind: text("kind").notNull(), code: text("code").notNull(),
+  label: text("label").notNull(), internal: text("internal").notNull().default(""),
+  classCc: text("class_cc").notNull().default(""), station: text("station").notNull().default(""),
+  sector: text("sector").notNull().default(""), active: integer("active").notNull().default(1),
+  revision: integer("revision").notNull().default(1), changedBy: text("changed_by").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, t => [
+  uniqueIndex("catalog_product_pn").on(sql`${t.code} COLLATE NOCASE`).where(sql`${t.kind} = 'product'`),
+  uniqueIndex("catalog_defect_code").on(sql`${t.code} COLLATE NOCASE`, sql`${t.station} COLLATE NOCASE`, sql`${t.sector} COLLATE NOCASE`).where(sql`${t.kind} = 'defect'`),
+]);
+export const catalogAudit = sqliteTable("catalog_audit", {
+  id: integer("id").primaryKey({ autoIncrement: true }), itemId: text("item_id").notNull(),
+  actor: text("actor").notNull(), before: text("before"), after: text("after").notNull(), at: text("at").notNull(),
+});

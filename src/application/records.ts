@@ -9,7 +9,7 @@ import {
 } from "@/src/domain/fpy";
 import { HttpError } from "./access";
 export const columns =
-  "id,kind,date,shift,line,pn,model,quantity,code,description,position,station,category,author,created_at AS createdAt,updated_at AS updatedAt,revision";
+  "id,kind,date,shift,line,pn,model,quantity,code,description,position,station,category,class_cc AS classCc,author,created_at AS createdAt,updated_at AS updatedAt,revision";
 export async function applyMutation(input: Mutation, user: User) {
   if (!input || !/^[-a-zA-Z0-9]{8,80}$/.test(input.id))
     throw new HttpError(400, "Identificação do envio inválida.");
@@ -53,7 +53,7 @@ export async function applyMutation(input: Mutation, user: User) {
       throw new HttpError(400, "Informe o motivo da correção.");
     statement = db
       .prepare(
-        "UPDATE records SET group_key=?,date=?,shift=?,line=?,pn=?,model=?,quantity=?,code=?,description=?,position=?,station=?,category=?,updated_at=?,revision=?,changed_by=?,reason=? WHERE id=?",
+        "UPDATE records SET group_key=?,date=?,shift=?,line=?,pn=?,model=?,quantity=?,code=?,description=?,position=?,station=?,category=?,class_cc=?,updated_at=?,revision=?,changed_by=?,reason=? WHERE id=?",
       )
       .bind(
         groupKey(e),
@@ -68,6 +68,7 @@ export async function applyMutation(input: Mutation, user: User) {
         e.position,
         e.station,
         e.category,
+        e.classCc || "",
         now,
         input.expectedRevision + 1,
         user.name,
@@ -79,7 +80,7 @@ export async function applyMutation(input: Mutation, user: User) {
       throw new HttpError(409, "Este registro já existe. Sincronize os dados.");
     statement = db
       .prepare(
-        "INSERT INTO records(id,kind,group_key,date,shift,line,pn,model,quantity,code,description,position,station,category,author,created_at,updated_at,revision,changed_by,reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO records(id,kind,group_key,date,shift,line,pn,model,quantity,code,description,position,station,category,class_cc,author,created_at,updated_at,revision,changed_by,reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
       .bind(
         e.id,
@@ -96,6 +97,7 @@ export async function applyMutation(input: Mutation, user: User) {
         e.position,
         e.station,
         e.category,
+        e.classCc || "",
         user.name,
         now,
         now,

@@ -83,3 +83,13 @@ Logo obtido de https://inventuspower.com/wp-content/uploads/inventus-power-logo.
 - Layout verificado em largura de 390 pixels, sem rolagem horizontal da página. Tabelas têm rolagem própria.
 
 Os testes usam dados fictícios somente no banco local. O conjunto anual real ainda não foi recebido; desempenho e capacidade de armazenamento devem ser homologados com esse volume e no dispositivo da fábrica.
+
+## Cadastros de produtos e defeitos
+
+Gestão → Cadastros permite cadastrar, editar, inativar e reativar produtos e defeitos. Supervisor, líder, técnica e administrador principal podem alterar. Operadores consultam as opções nos lançamentos. Produtos guardam PN, modelo, Interno e Class. CC separadamente. Defeitos são identificados por código, setor e estação, pois o código sozinho não é único nas bases Excel. As alterações usam revisão e auditoria; registros anteriores não são reescritos.
+
+A migração `drizzle/0004_catalog.sql` cria a base e importa 251 PNs e 1.210 defeitos das abas CLASSIFICAÇÃO e DADOS dos seis arquivos BD_*_2026.xlsm fornecidos em 17/09/2026. Os PNs 16B071-0, 16B072-0, 24V0008-0 e 90K0008-0 foram excluídos da importação por orientação do responsável. As planilhas originais não são alteradas. Os cadastros acompanham a sincronização offline e o backup versão 3.
+
+Na restauração em banco isolado, após criar o esquema, remover os cadastros e auditorias de carga inicial antes de importar o backup. Suspender os gatilhos de auditoria de `catalog` durante a restauração, preservando os IDs do arquivo, e recriá-los ao final. O teste `tests/backup-local.mjs` verifica esse procedimento e as contagens de ambas as tabelas.
+
+Antes de executar esta versão, aplicar as migrações SQL em ordem no banco local, incluindo 0004. A migração não foi aplicada ao banco remoto. Para publicação futura, aplicar 0004 uma única vez ao banco de destino antes de disponibilizar esta versão. Não repetir a migração: a importação não sobrescreve cadastros existentes. A coluna de categoria dos registros guarda Interno; Class. CC é um campo adicional, vazio nos registros antigos.

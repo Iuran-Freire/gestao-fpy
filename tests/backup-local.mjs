@@ -26,6 +26,10 @@ for (const file of readdirSync("drizzle")
   .sort())
   restored.exec(readFileSync("drizzle/" + file, "utf8"));
 let count = 0;
+// Restore into an isolated empty catalog, without replaying audit triggers.
+const catalogTriggers = restored.prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND tbl_name='catalog'").all();
+for (const trigger of catalogTriggers) restored.exec('DROP TRIGGER "' + trigger.name + '"');
+restored.exec("DELETE FROM catalog; DELETE FROM catalog_audit;");
 for (const { table, row } of lines.slice(1)) {
   assert.ok(
     [
@@ -37,6 +41,8 @@ for (const { table, row } of lines.slice(1)) {
       "credentials",
       "login_handles",
       "user_audit",
+      "catalog",
+      "catalog_audit",
     ].includes(table),
   );
   const keys = Object.keys(row).filter((k) => k !== "_rowid");
@@ -48,6 +54,9 @@ for (const { table, row } of lines.slice(1)) {
   count++;
 }
 assert.ok(count > 0);
+for (const trigger of catalogTriggers) restored.exec(trigger.sql);
+assert.equal(restored.prepare("SELECT count(*) AS n FROM catalog").get().n, lines.filter(l => l.table === 'catalog').length);
+assert.equal(restored.prepare("SELECT count(*) AS n FROM catalog_audit").get().n, lines.filter(l => l.table === 'catalog_audit').length);
 assert.ok(restored.prepare("SELECT COUNT(*) AS n FROM records").get().n > 0);
 assert.ok(
   restored.prepare("SELECT COUNT(*) AS n FROM credentials").get().n > 0,

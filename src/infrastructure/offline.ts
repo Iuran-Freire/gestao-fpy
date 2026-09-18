@@ -1,6 +1,8 @@
 import type { Entry, Mutation, User } from "@/src/domain/fpy";
 export type Pending = { mutation: Mutation; error?: string };
+import type { CatalogItem } from "@/src/domain/catalog";
 export type LocalState = {
+  catalog?: CatalogItem[];
   user: User;
   years: Record<string, { records: Entry[]; at: string }>;
   pending: Pending[];

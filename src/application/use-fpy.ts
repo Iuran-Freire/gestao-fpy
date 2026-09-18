@@ -81,6 +81,8 @@ export function useFpy() {
             if (transient) throw err;
           }
         }
+        s.catalog = await fetchJson("/api/catalog");
+        await writeLocal(s);
         const years = new Set([activeYear.current, ...Object.keys(s.years)]);
         for (const y of years) {
           const records = await loadYear(y);

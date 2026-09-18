@@ -26,6 +26,7 @@ export type Entry = {
   position: string;
   station: string;
   category: string;
+  classCc?: string;
   author: string;
   createdAt: string;
   updatedAt: string;
@@ -78,6 +79,9 @@ export function validateEntry(input: unknown): Entry {
     e[k] = e[k].trim();
   }
   if (!e.line || !e.pn || !e.model) throw Error("Informe linha, PN e modelo.");
+  if (e.classCc === undefined) e.classCc = "";
+  if (typeof e.classCc !== "string" || e.classCc.length > 160) throw Error("Class. CC inválida.");
+  e.classCc = e.classCc.trim();
   e.line = e.line.toUpperCase();
   e.pn = e.pn.toUpperCase();
   e.code = e.code.toUpperCase();
@@ -96,7 +100,7 @@ export function validateEntry(input: unknown): Entry {
     e.description = "";
     e.position = "";
     e.station = "";
-    e.category = "";
+    // Product classification applies to both production and defect records.
   }
   return e;
 }

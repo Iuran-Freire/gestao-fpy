@@ -29,6 +29,13 @@
       "when": 1789325478515,
       "tag": "0003_rapid_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789658161121,
+      "tag": "0004_catalog",
+      "breakpoints": true
     }
   ]
 }

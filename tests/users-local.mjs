@@ -87,6 +87,8 @@ assert.equal((await req("/api/session", null, oldCookie)).status, 401);
 assert.equal((await req("/api/session", null, cookie)).data.mustChange, false);
 assert.equal((await req("/api/records?year=2026", null, cookie)).status, 200);
 assert.equal((await req("/api/users", null, cookie)).status, 403);
+assert.equal((await req("/api/catalog", null, cookie)).status, 200);
+assert.equal((await req("/api/catalog", { id: crypto.randomUUID() }, cookie)).status, 403);
 assert.equal(
   (
     await req(

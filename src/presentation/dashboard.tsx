@@ -48,6 +48,7 @@ import { createCsvExport, downloadCsv } from "@/src/application/csv";
 import { Choice, EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
+import CatalogManagement from "./catalog-management";
 import AnalyticsDashboard from "./analytics-dashboard";
 const percent = (v: number | null) =>
   v === null
@@ -119,7 +120,7 @@ export default function Dashboard() {
         );
     const prompt = (e: Event) => {
       e.preventDefault();
-      setInstall(e);
+      setInstall(e as InstallPrompt);
     };
     window.addEventListener("beforeinstallprompt", prompt);
     return () => window.removeEventListener("beforeinstallprompt", prompt);
@@ -196,6 +197,8 @@ export default function Dashboard() {
                 "Turno",
                 "Linha",
                 "PN / Modelo",
+                "Interno / categoria original",
+                "Class. CC",
                 ...(kind === "defect" ? ["Código", "Posição"] : []),
                 "Quantidade",
                 "Responsável",
@@ -216,6 +219,8 @@ export default function Dashboard() {
                   <b>{e.pn}</b>
                   <small className="cell-sub">{e.model}</small>
                 </TableCell>
+                <TableCell>{e.category || "—"}</TableCell>
+                <TableCell>{e.classCc || "—"}</TableCell>
                 {kind === "defect" && (
                   <>
                     <TableCell title={e.description}>
@@ -479,6 +484,7 @@ export default function Dashboard() {
               <TabsTrigger value="production">Produção</TabsTrigger>
             </>}
             {area === "management" && <>
+              {app.local && (app.local.user.owner === 1 || canCorrect(app.local.user.role)) && <TabsTrigger value="catalog" onClick={() => setManagementTab("catalog")}>Cadastros</TabsTrigger>}
               <TabsTrigger value="sync" onClick={() => setManagementTab("sync")}>Sincronização</TabsTrigger>
               {app.local && canCorrect(app.local.user.role) && (
                 <TabsTrigger value="admin" onClick={() => setManagementTab("admin")}>Usuários e backup</TabsTrigger>
@@ -583,7 +589,7 @@ export default function Dashboard() {
           {area === "dashboard" && (
             <AnalyticsDashboard
               entries={app.entries}
-              year={app.year}
+          year={app.year}
               onYearChange={(value) => {
                 app.setYear(value);
                 setTimeout(() => app.sync(), 0);
@@ -757,6 +763,9 @@ export default function Dashboard() {
               </div>
             </section>
           </TabsContent>
+          <TabsContent value="catalog" hidden={area !== "management"}>
+            {app.local && (app.local.user.owner === 1 || canCorrect(app.local.user.role)) && <CatalogManagement items={app.local.catalog} online={app.online} onUpdated={app.sync} />}
+          </TabsContent>
           <TabsContent value="admin" hidden={area !== "management"}>
             {app.local && (
               <UserManagement
@@ -846,6 +855,7 @@ export default function Dashboard() {
           editing={form.entry}
           user={app.local.user}
           entries={app.entries}
+          catalog={app.local.catalog}
           onClose={() => setForm(null)}
           onSave={app.save}
         />
@@ -887,7 +897,8 @@ export default function Dashboard() {
                             description: "Descrição",
                             position: "Posição",
                             station: "Estação",
-                            category: "Categoria",
+                            category: "Interno / categoria original",
+                            classCc: "Class. CC",
                             revision: "Revisão",
                           } as Record<string, string>
                         )[k] || k}

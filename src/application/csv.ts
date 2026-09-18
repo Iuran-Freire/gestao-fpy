@@ -63,7 +63,6 @@ export function createCsvExport(
     "Descrição",
     "Posição mecânica",
     "Estação",
-    "Categoria",
   ];
   return {
     filename: `${tab === "defects" ? "defeitos" : "producao"}_${year}.csv`,
@@ -76,6 +75,8 @@ export function createCsvExport(
         "Linha",
         "PN",
         "Modelo",
+        "Interno / categoria original",
+        "Class. CC",
         ...(kind === "defect" ? defectColumns : []),
         "Quantidade",
         "Responsável",
@@ -91,13 +92,14 @@ export function createCsvExport(
           entry.line,
           entry.pn,
           entry.model,
+          entry.category,
+          entry.classCc || "",
           ...(kind === "defect"
             ? [
                 entry.code,
                 entry.description,
                 entry.position,
                 entry.station,
-                entry.category,
               ]
             : []),
           entry.quantity,

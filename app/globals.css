@@ -1124,3 +1124,14 @@ label input {
     grid-column: 2 / -1;
   }
 }
+
+.catalog-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-bottom: 20px; }
+.catalog-controls > label { flex: 1; min-width: 200px; display: grid; gap: 6px; }
+.catalog-controls .catalog-checkbox { display: flex; align-items: center; gap: 8px; min-width: 160px; }
+.catalog-checkbox input { width: auto; }
+.catalog-table { overflow-x: auto; margin: 16px 0; }
+.catalog-table table { width: 100%; border-collapse: collapse; text-align: left; }
+.catalog-table th, .catalog-table td { padding: 12px; border-bottom: 1px solid #e4e8eb; }
+.catalog-table th { background: #f5f7f9; white-space: nowrap; }
+.catalog-panel select, .catalog-dialog select, .catalog-controls input { min-height: 40px; border: 1px solid #d8dee4; border-radius: 6px; padding: 8px; background: white; color: #23303d; }
+.catalog-dialog select { display: block; width: 100%; }
