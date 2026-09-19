@@ -23,6 +23,54 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  {
+    files: ["src/frontend/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/src/backend/**"],
+              message: "O frontend deve acessar o backend somente pelas rotas HTTP.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/backend/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/src/frontend/**"],
+              message: "O backend não pode depender de módulos do frontend.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/shared/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/src/frontend/**", "@/src/backend/**"],
+              message: "Módulos compartilhados não podem depender do frontend ou backend.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -3,13 +3,13 @@ import {
   failure,
   HttpError,
   sessionCookie,
-} from "@/src/application/access";
-import { database } from "@/src/infrastructure/database";
+} from "@/src/backend/application/access";
+import { database } from "@/src/backend/infrastructure/database";
 import {
   verifyPassword,
   tokenHash,
   newToken,
-} from "@/src/infrastructure/passwords";
+} from "@/src/backend/infrastructure/passwords";
 export async function POST(req: Request) {
   try {
     checkOrigin(req);

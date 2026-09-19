@@ -7,7 +7,7 @@ import {
   isoWeek,
   groupKey,
   canCorrect,
-} from "../src/domain/fpy.ts";
+} from "../src/shared/domain/fpy.ts";
 const base = {
   id: "test-0001",
   kind: "production",

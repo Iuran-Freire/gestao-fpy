@@ -3,9 +3,9 @@ import {
   failure,
   checkOrigin,
   HttpError,
-} from "@/src/application/access";
-import { applyMutation, columns } from "@/src/application/records";
-import { database } from "@/src/infrastructure/database";
+} from "@/src/backend/application/access";
+import { applyMutation, columns } from "@/src/backend/application/records";
+import { database } from "@/src/backend/infrastructure/database";
 export async function GET(req: Request) {
   try {
     await currentUser();

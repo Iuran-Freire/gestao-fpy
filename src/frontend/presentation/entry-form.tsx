@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { validateEntry, type Entry, type User } from "@/src/domain/fpy";
-import type { CatalogItem } from "@/src/domain/catalog";
+import { validateEntry, type Entry, type User } from "@/src/shared/domain/fpy";
+import type { CatalogItem } from "@/src/shared/domain/catalog";
 
 export function Choice({ label, value, onChange, items }: {
   label: string; value: string; onChange: (value: string) => void;

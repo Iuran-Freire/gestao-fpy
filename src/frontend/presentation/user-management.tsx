@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -35,8 +35,16 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Choice } from "./entry-form";
-import { fetchJson } from "@/src/infrastructure/offline";
-import type { User } from "@/src/domain/fpy";
+import { fetchJson } from "@/src/frontend/infrastructure/offline";
+import type { User } from "@/src/shared/domain/fpy";
+type UserAudit = {
+  id: number;
+  actor: string;
+  actor_name?: string | null;
+  action: string;
+  after?: string | null;
+  at: string;
+};
 const roles = [
   { value: "operador", label: "Operador" },
   { value: "supervisor", label: "Supervisor" },
@@ -362,22 +370,24 @@ export default function UserManagement({
     [editing, setEditing] = useState<User | null | undefined>(undefined),
     [reset, setReset] = useState<User | null>(null),
     [toggle, setToggle] = useState<User | null>(null),
-    [history, setHistory] = useState<any[] | null>(null),
+    [history, setHistory] = useState<UserAudit[] | null>(null),
     [search, setSearch] = useState("");
-  async function load() {
+  const load = useCallback(async () => {
     setBusy(true);
     setError("");
     try {
-      setUsers(await fetchJson("/api/users"));
+      setUsers(await fetchJson<User[]>("/api/users"));
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
-  }
+  }, []);
   useEffect(() => {
-    if (online) void load();
-  }, [online]);
+    if (!online) return;
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [online, load]);
   function updated() {
     setSuccess("Alteração salva.");
     void load();
@@ -527,7 +537,7 @@ export default function UserManagement({
                     onClick={async () => {
                       try {
                         setHistory(
-                          await fetchJson("/api/users?history=" + u.id),
+                          await fetchJson<UserAudit[]>("/api/users?history=" + u.id),
                         );
                       } catch (e) {
                         setError((e as Error).message);

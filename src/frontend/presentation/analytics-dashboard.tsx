@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Area, AreaChart, Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, AlertTriangle, Factory, RotateCcw, ShieldCheck } from "lucide-react";
-import { isoWeek, summarize, totalFpy, type Entry, type Group } from "@/src/domain/fpy";
+import { isoWeek, summarize, totalFpy, type Entry, type Group } from "@/src/shared/domain/fpy";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const FAMILIES = ["Todos", "Battery", "Adapter", "LED Driver", "SMT", "Modem", "TP-Link", "Outros"];

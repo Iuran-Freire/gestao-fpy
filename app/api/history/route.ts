@@ -1,5 +1,5 @@
-import { currentUser, failure, HttpError } from "@/src/application/access";
-import { database } from "@/src/infrastructure/database";
+import { currentUser, failure, HttpError } from "@/src/backend/application/access";
+import { database } from "@/src/backend/infrastructure/database";
 export async function GET(req: Request) {
   try {
     const u = await currentUser();

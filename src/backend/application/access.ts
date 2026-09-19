@@ -1,8 +1,8 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getChatGPTUser } from "@/src/backend/auth/chatgpt-auth";
 import { cookies } from "next/headers";
-import { database } from "@/src/infrastructure/database";
-import { tokenHash } from "@/src/infrastructure/passwords";
-import type { User } from "@/src/domain/fpy";
+import { database } from "@/src/backend/infrastructure/database";
+import { tokenHash } from "@/src/backend/infrastructure/passwords";
+import type { User } from "@/src/shared/domain/fpy";
 export class HttpError extends Error {
   constructor(
     public status: number,

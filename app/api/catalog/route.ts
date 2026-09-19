@@ -1,6 +1,6 @@
-import { currentUser, checkOrigin, canManageUsers, HttpError, failure } from "@/src/application/access";
-import { database } from "@/src/infrastructure/database";
-import { validateCatalog, type CatalogItem } from "@/src/domain/catalog";
+import { currentUser, checkOrigin, canManageUsers, HttpError, failure } from "@/src/backend/application/access";
+import { database } from "@/src/backend/infrastructure/database";
+import { validateCatalog, type CatalogItem } from "@/src/shared/domain/catalog";
 
 const columns = "id,kind,code,label,internal,class_cc AS classCc,station,sector,active,revision";
 export async function GET() {

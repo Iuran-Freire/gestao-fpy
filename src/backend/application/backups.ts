@@ -1,4 +1,4 @@
-import { database, bucket } from "@/src/infrastructure/database";
+import { database, bucket } from "@/src/backend/infrastructure/database";
 export async function createBackup() {
   const db = database(),
     b = bucket(),

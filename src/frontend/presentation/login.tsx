@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { fetchJson, readLocal } from "@/src/infrastructure/offline";
+import { fetchJson, readLocal } from "@/src/frontend/infrastructure/offline";
 export default function Login({
   onClose,
   onSuccess,

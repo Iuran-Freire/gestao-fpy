@@ -7,13 +7,14 @@ import {
   loadYear,
   visibleEntries,
   type LocalState,
-} from "@/src/infrastructure/offline";
+} from "@/src/frontend/infrastructure/offline";
 import {
   groupKey,
   type Entry,
   type Mutation,
   type User,
-} from "@/src/domain/fpy";
+} from "@/src/shared/domain/fpy";
+import type { CatalogItem } from "@/src/shared/domain/catalog";
 async function locked<T>(fn: () => Promise<T>): Promise<T> {
   return navigator.locks ? navigator.locks.request("fpy-state", fn) : fn();
 }
@@ -22,10 +23,14 @@ export function useFpy() {
     [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
-    [online, setOnline] = useState(true),
+    [online, setOnline] = useState(() =>
+      typeof navigator === "undefined" ? true : navigator.onLine,
+    ),
     [year, setYear] = useState(String(new Date().getFullYear()));
   const activeYear = useRef(year);
-  activeYear.current = year;
+  useEffect(() => {
+    activeYear.current = year;
+  }, [year]);
   const reload = useCallback(async () => {
     setLocal(await readLocal());
   }, []);
@@ -34,7 +39,7 @@ export function useFpy() {
     try {
       await locked(async () => {
         let s = await readLocal();
-        const user: User = await fetchJson("/api/session");
+        const user = await fetchJson<User>("/api/session");
         if (s && s.user.id !== user.id) {
           if (s.pending.length)
             throw Error(
@@ -81,7 +86,7 @@ export function useFpy() {
             if (transient) throw err;
           }
         }
-        s.catalog = await fetchJson("/api/catalog");
+        s.catalog = await fetchJson<CatalogItem[]>("/api/catalog");
         await writeLocal(s);
         const years = new Set([activeYear.current, ...Object.keys(s.years)]);
         for (const y of years) {
@@ -105,7 +110,6 @@ export function useFpy() {
     }
   }, [reload]);
   useEffect(() => {
-    setOnline(navigator.onLine);
     readLocal()
       .then((s) => {
         setLocal(s);

@@ -1,5 +1,5 @@
-import { currentUser, failure } from "@/src/application/access";
-import { bucketAvailable } from "@/src/infrastructure/database";
+import { currentUser, failure } from "@/src/backend/application/access";
+import { bucketAvailable } from "@/src/backend/infrastructure/database";
 export async function GET() {
   try {
     return Response.json(

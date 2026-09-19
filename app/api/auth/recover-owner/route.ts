@@ -1,6 +1,6 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
-import { database } from "@/src/infrastructure/database";
-import { sessionCookie } from "@/src/application/access";
+import { getChatGPTUser } from "@/src/backend/auth/chatgpt-auth";
+import { database } from "@/src/backend/infrastructure/database";
+import { sessionCookie } from "@/src/backend/application/access";
 export async function GET(req: Request) {
   const identity = await getChatGPTUser();
   if (!identity)

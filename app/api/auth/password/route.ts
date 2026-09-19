@@ -4,15 +4,15 @@ import {
   checkOrigin,
   HttpError,
   sessionCookie,
-} from "@/src/application/access";
-import { accountAudit } from "@/src/application/users";
-import { database } from "@/src/infrastructure/database";
+} from "@/src/backend/application/access";
+import { accountAudit } from "@/src/backend/application/users";
+import { database } from "@/src/backend/infrastructure/database";
 import {
   passwordHash,
   verifyPassword,
   newToken,
   tokenHash,
-} from "@/src/infrastructure/passwords";
+} from "@/src/backend/infrastructure/passwords";
 export async function POST(req: Request) {
   try {
     checkOrigin(req);

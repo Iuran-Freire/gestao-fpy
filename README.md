@@ -6,12 +6,12 @@ Há também uma configuração independente em `wrangler.cloudflare.jsonc` para 
 
 ## Organização do código
 
-- `src/domain/fpy.ts`: entidades, validação, chave de produção, semana ISO e FPY ponderado. Sem dependência de interface ou banco.
-- `src/application/`: casos de uso, permissões, sincronização e backup.
-- `src/infrastructure/`: acesso ao D1/R2, IndexedDB e transporte HTTP.
-- `src/presentation/`: consulta, formulários e componentes de interação.
-- `app/api/`: adaptadores HTTP que autenticam e chamam a aplicação.
-- `db/schema.ts` e `drizzle/`: estrutura e migrações versionadas, incluindo auditoria e proteção de revisão.
+- `src/frontend/`: interface React, estado da aplicação, IndexedDB, sincronização HTTP e exportação CSV.
+- `src/backend/`: autenticação, permissões, casos de uso do servidor e acesso ao D1/R2.
+- `src/shared/domain/`: tipos, validações e cálculos usados pelo frontend e pelo backend, sem dependência de interface ou banco.
+- `app/`: entrada do Next.js. `page.tsx` carrega o frontend e `app/api/` contém somente os adaptadores HTTP do backend.
+- `components/ui/`: componentes visuais reutilizáveis do design system.
+- `db/schema.ts` e `drizzle/`: esquema do backend e migrações versionadas, incluindo auditoria e proteção de revisão.
 - `public/`: logo oficial, ícones e recursos PWA.
 - `tests/`: regras de domínio e integração local.
 
@@ -56,7 +56,7 @@ O manifesto lista todos os objetos JSON de um backup completo. Para restauraçã
 - `npm ci`: instalar dependências.
 - `npm run dev`: prévia em localhost:5173.
 - `npm run build`: build de produção.
-- `node --test tests/fpy.test.mjs`: regras de cálculo e validação.
+- `node --test tests/*.test.mjs`: regras de cálculo, validação, CSV e cadastros.
 - `node tests/api-local.mjs`: integração contra prévia local; cria somente registros fictícios identificados como QA.
 - `node tests/users-local.mjs`: contas fictícias, login, permissões, edição, desativação, redefinição e revogação de sessões.
 - `npx tsc --noEmit`: verificação TypeScript.

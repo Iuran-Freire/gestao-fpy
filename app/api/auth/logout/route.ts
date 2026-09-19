@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
-import { checkOrigin, sessionCookie, failure } from "@/src/application/access";
-import { database } from "@/src/infrastructure/database";
-import { tokenHash } from "@/src/infrastructure/passwords";
+import { checkOrigin, sessionCookie, failure } from "@/src/backend/application/access";
+import { database } from "@/src/backend/infrastructure/database";
+import { tokenHash } from "@/src/backend/infrastructure/passwords";
 export async function POST(req: Request) {
   try {
     checkOrigin(req);

@@ -1,6 +1,6 @@
-import type { Entry, Mutation, User } from "@/src/domain/fpy";
+import type { Entry, Mutation, User } from "@/src/shared/domain/fpy";
 export type Pending = { mutation: Mutation; error?: string };
-import type { CatalogItem } from "@/src/domain/catalog";
+import type { CatalogItem } from "@/src/shared/domain/catalog";
 export type LocalState = {
   catalog?: CatalogItem[];
   user: User;
@@ -40,7 +40,10 @@ export async function writeLocal(value: LocalState | null) {
     tx.onabort = () => reject(tx.error);
   });
 }
-export async function fetchJson(url: string, init?: RequestInit): Promise<any> {
+export async function fetchJson<T = unknown>(
+  url: string,
+  init?: RequestInit,
+): Promise<T> {
   const r = await fetch(url, {
     signal: AbortSignal.timeout(20000),
     ...init,
@@ -52,22 +55,24 @@ export async function fetchJson(url: string, init?: RequestInit): Promise<any> {
     );
   });
   if (!r.ok) {
-    const body: any = await r
+    const body = (await r
       .json()
-      .catch(() => ({ error: "Sessão expirada ou serviço indisponível." }));
+      .catch(() => ({ error: "Sessão expirada ou serviço indisponível." }))) as {
+      error?: string;
+    };
     const e = new Error(body.error || "Falha de conexão.") as Error & {
       status: number;
     };
     e.status = r.status;
     throw e;
   }
-  return r.json();
+  return (await r.json()) as T;
 }
 export async function loadYear(year: string): Promise<Entry[]> {
   let cursor: string | null = "",
     records: Entry[] = [];
   do {
-    const data = await fetchJson(
+    const data: { records: Entry[]; next: string | null } = await fetchJson(
       "/api/records?year=" +
         year +
         "&cursor=" +

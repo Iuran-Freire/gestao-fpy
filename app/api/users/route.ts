@@ -5,9 +5,9 @@ import {
   checkOrigin,
   canManageUsers,
   publicUserColumns,
-} from "@/src/application/access";
-import { database } from "@/src/infrastructure/database";
-import { manageAccount } from "@/src/application/users";
+} from "@/src/backend/application/access";
+import { database } from "@/src/backend/infrastructure/database";
+import { manageAccount } from "@/src/backend/application/users";
 export async function GET(req: Request) {
   try {
     const u = await currentUser();

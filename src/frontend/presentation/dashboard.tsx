@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   Plus,
   Factory,
@@ -36,15 +37,15 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@/components/ui/empty";
-import { useFpy } from "@/src/application/use-fpy";
+import { useFpy } from "@/src/frontend/application/use-fpy";
 import {
   summarize,
   isoWeek,
   canCorrect,
   type Entry,
-} from "@/src/domain/fpy";
-import { fetchJson } from "@/src/infrastructure/offline";
-import { createCsvExport, downloadCsv } from "@/src/application/csv";
+} from "@/src/shared/domain/fpy";
+import { fetchJson } from "@/src/frontend/infrastructure/offline";
+import { createCsvExport, downloadCsv } from "@/src/frontend/application/csv";
 import { Choice, EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
@@ -72,6 +73,7 @@ type HistoryItem = {
 };
 export default function Dashboard() {
   const app = useFpy();
+  const setAppMessage = app.setMessage;
   const [loginOpen, setLoginOpen] = useState(false),
     [profileOpen, setProfileOpen] = useState(false),
     [passwordOpen, setPasswordOpen] = useState(false);
@@ -114,7 +116,7 @@ export default function Dashboard() {
           });
         })
         .catch(() =>
-          app.setMessage(
+          setAppMessage(
             "Não foi possível ativar a abertura offline. Tente recarregar.",
           ),
         );
@@ -124,7 +126,7 @@ export default function Dashboard() {
     };
     window.addEventListener("beforeinstallprompt", prompt);
     return () => window.removeEventListener("beforeinstallprompt", prompt);
-  }, []);
+  }, [setAppMessage]);
   const entries = app.entries.filter(
     (e) =>
       (!search ||
@@ -297,11 +299,11 @@ export default function Dashboard() {
   return (
     <main className="workspace">
       <header className="topbar">
-        <img
+        <Image
           src="/inventus-power-logo.svg"
           alt="Inventus Power"
-          width="166"
-          height="48"
+          width={166}
+          height={48}
         />
         <span className="system-name">
           QUALIDADE <b>Gestão de FPY</b>
@@ -589,7 +591,7 @@ export default function Dashboard() {
           {area === "dashboard" && (
             <AnalyticsDashboard
               entries={app.entries}
-          year={app.year}
+              year={app.year}
               onYearChange={(value) => {
                 app.setYear(value);
                 setTimeout(() => app.sync(), 0);
@@ -782,7 +784,7 @@ export default function Dashboard() {
                     disabled={adminBusy || !app.online}
                     onClick={() =>
                       admin(async () => {
-                        const r = await fetchJson("/api/backups", {
+                        const r = await fetchJson<{ date: string }>("/api/backups", {
                           method: "POST",
                         });
                         setBackup(r.date);

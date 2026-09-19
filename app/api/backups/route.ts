@@ -3,9 +3,9 @@ import {
   checkOrigin,
   failure,
   HttpError,
-} from "@/src/application/access";
-import { createBackup } from "@/src/application/backups";
-import { bucket } from "@/src/infrastructure/database";
+} from "@/src/backend/application/access";
+import { createBackup } from "@/src/backend/application/backups";
+import { bucket } from "@/src/backend/infrastructure/database";
 export async function GET(req: Request) {
   try {
     const u = await currentUser();

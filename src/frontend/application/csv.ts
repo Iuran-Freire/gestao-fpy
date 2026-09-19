@@ -1,4 +1,4 @@
-import { isoWeek, type Entry, type Group } from "../domain/fpy.ts";
+import { isoWeek, type Entry, type Group } from "../../shared/domain/fpy.ts";
 
 export type ExportTab = "fpy" | "defects" | "production";
 

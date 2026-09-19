@@ -1,4 +1,4 @@
-import { database } from "@/src/infrastructure/database";
+import { database } from "@/src/backend/infrastructure/database";
 import {
   canCorrect,
   validateEntry,
@@ -6,7 +6,7 @@ import {
   type Entry,
   type Mutation,
   type User,
-} from "@/src/domain/fpy";
+} from "@/src/shared/domain/fpy";
 import { HttpError } from "./access";
 export const columns =
   "id,kind,date,shift,line,pn,model,quantity,code,description,position,station,category,class_cc AS classCc,author,created_at AS createdAt,updated_at AS updatedAt,revision";

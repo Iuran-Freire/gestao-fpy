@@ -1,11 +1,19 @@
-import { database } from "@/src/infrastructure/database";
-import { passwordHash } from "@/src/infrastructure/passwords";
+import { database } from "@/src/backend/infrastructure/database";
+import { passwordHash } from "@/src/backend/infrastructure/passwords";
 import { HttpError, canManageUsers, publicUserColumns } from "./access";
-import type { User } from "@/src/domain/fpy";
-export function validateAccount(input: any) {
+import type { User } from "@/src/shared/domain/fpy";
+
+type AccountPayload = Record<string, unknown>;
+
+function accountPayload(input: unknown): AccountPayload {
   if (!input || typeof input !== "object")
     throw new HttpError(400, "Dados inválidos.");
-  const { name, username, email = "", role } = input;
+  return input as AccountPayload;
+}
+
+export function validateAccount(input: unknown) {
+  const body = accountPayload(input);
+  const { name, username, email = "", role } = body;
   if (typeof name !== "string" || !name.trim() || name.length > 120)
     throw new HttpError(400, "Informe o nome completo.");
   if (
@@ -22,14 +30,17 @@ export function validateAccount(input: any) {
     (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
   )
     throw new HttpError(400, "E-mail inválido.");
-  if (!["operador", "supervisor", "lider", "tecnica"].includes(role))
+  if (
+    typeof role !== "string" ||
+    !["operador", "supervisor", "lider", "tecnica"].includes(role)
+  )
     throw new HttpError(400, "Perfil inválido.");
   return {
     name: name.trim(),
     username: username.toLowerCase(),
     email: email.trim().toLowerCase(),
-    role,
-    active: input.active === 0 ? 0 : 1,
+    role: role as User["role"],
+    active: body.active === 0 ? 0 : 1,
   };
 }
 export function accountAudit(
@@ -52,12 +63,14 @@ export function accountAudit(
       new Date().toISOString(),
     );
 }
-export async function manageAccount(body: any, actor: User) {
+export async function manageAccount(input: unknown, actor: User) {
   const db = database();
-  if (!body || typeof body !== "object")
-    throw new HttpError(400, "Dados inválidos.");
+  const body = accountPayload(input);
   const action = body.action;
-  if (!["create", "update", "reset"].includes(action))
+  if (
+    typeof action !== "string" ||
+    !["create", "update", "reset"].includes(action)
+  )
     throw new HttpError(400, "Ação inválida.");
   const target =
     action === "create"
@@ -83,6 +96,8 @@ export async function manageAccount(body: any, actor: User) {
     );
   if (action === "reset") {
     if (!canManageUsers(actor)) throw new HttpError(403, "Sem permissão.");
+    if (typeof body.password !== "string")
+      throw new HttpError(400, "Informe uma senha.");
     let hash: string;
     try {
       hash = passwordHash(body.password);
@@ -116,7 +131,8 @@ export async function manageAccount(body: any, actor: User) {
   const id = target?.id || crypto.randomUUID();
   const statements: D1PreparedStatement[] = [];
   if (target) {
-    if (!Number.isInteger(body.revision) || body.revision !== target.revision)
+    const revision = body.revision;
+    if (!Number.isInteger(revision) || revision !== target.revision)
       throw new HttpError(
         409,
         "Usuário atualizado por outra pessoa. Recarregue a lista.",
@@ -132,11 +148,13 @@ export async function manageAccount(body: any, actor: User) {
           data.email,
           data.role,
           data.active,
-          body.revision + 1,
+          (revision as number) + 1,
           id,
         ),
     );
   } else {
+    if (typeof body.password !== "string")
+      throw new HttpError(400, "Informe uma senha.");
     let hash: string;
     try {
       hash = passwordHash(body.password);
