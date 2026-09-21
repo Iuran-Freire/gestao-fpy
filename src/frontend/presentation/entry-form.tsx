@@ -23,7 +23,7 @@ function CatalogPicker({ label, value, placeholder, options, onSelect }: {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const normalized = query.trim().toLocaleLowerCase("pt-BR");
-  const matches = normalized ? options.filter((option) => option.search.toLocaleLowerCase("pt-BR").includes(normalized)).slice(0, 30) : [];
+  const matches = normalized ? options.filter((option) => option.search.toLocaleLowerCase("pt-BR").includes(normalized)) : options;
   return <div className="catalog-picker"><label htmlFor={inputId}>{label}</label><div className="catalog-picker-control" onBlur={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
   }}>
@@ -31,7 +31,7 @@ function CatalogPicker({ label, value, placeholder, options, onSelect }: {
       if (event.key === "Escape") setOpen(false);
       if (event.key === "Enter" && matches[0]) { event.preventDefault(); onSelect(matches[0].id); setOpen(false); }
     }} />
-    {open && <div className="catalog-picker-results">{!normalized ? <p>Digite parte do código ou da descrição.</p> : matches.length ? matches.map((option) => <button type="button" key={option.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(option.id); setOpen(false); }}>{option.label}</button>) : <p>Nenhum cadastro encontrado.</p>}</div>}
+    {open && <div className="catalog-picker-results">{matches.length ? <><p className="catalog-picker-count">{matches.length} cadastro(s) na lista · digite para filtrar</p>{matches.map((option) => <button type="button" key={option.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(option.id); setOpen(false); }}>{option.label}</button>)}</> : <p>Nenhum cadastro encontrado.</p>}</div>}
   </div></div>;
 }
 

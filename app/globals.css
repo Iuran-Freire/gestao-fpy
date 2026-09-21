@@ -700,6 +700,14 @@ label input {
 .catalog-picker-results button:hover,
 .catalog-picker-results button:focus { background: #fff3e8; color: #9d4b06; }
 .catalog-picker-results p { margin: 0; padding: 12px; color: #6e7881; font-size: 13px; }
+.catalog-picker-results .catalog-picker-count {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  border-bottom: 1px solid #e3e7ea;
+  background: #f5f7f8;
+  font-weight: 600;
+}
 .selected-defect {
   grid-column: 1 / -1;
   display: flex;
