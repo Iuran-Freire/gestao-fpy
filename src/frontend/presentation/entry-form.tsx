@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -14,6 +14,27 @@ export function Choice({ label, value, onChange, items }: {
 }
 
 type DefectRow = { quantity: string; code: string; description: string; position: string; station: string; catalogId: string };
+type PickerOption = { id: string; label: string; search: string };
+
+function CatalogPicker({ label, value, placeholder, options, onSelect }: {
+  label: string; value: string; placeholder: string; options: PickerOption[]; onSelect: (id: string) => void;
+}) {
+  const inputId = useId();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const normalized = query.trim().toLocaleLowerCase("pt-BR");
+  const matches = normalized ? options.filter((option) => option.search.toLocaleLowerCase("pt-BR").includes(normalized)).slice(0, 30) : [];
+  return <div className="catalog-picker"><label htmlFor={inputId}>{label}</label><div className="catalog-picker-control" onBlur={(event) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+  }}>
+    <input id={inputId} value={open ? query : value} placeholder={placeholder} autoComplete="off" onFocus={() => { setQuery(""); setOpen(true); }} onChange={(event) => { setQuery(event.target.value); setOpen(true); }} onKeyDown={(event) => {
+      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Enter" && matches[0]) { event.preventDefault(); onSelect(matches[0].id); setOpen(false); }
+    }} />
+    {open && <div className="catalog-picker-results">{!normalized ? <p>Digite parte do código ou da descrição.</p> : matches.length ? matches.map((option) => <button type="button" key={option.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(option.id); setOpen(false); }}>{option.label}</button>) : <p>Nenhum cadastro encontrado.</p>}</div>}
+  </div></div>;
+}
+
 export function EntryForm({ kind, editing, user, catalog, onClose, onSave }: {
   kind: "production" | "defect"; editing?: Entry; user: User; entries: Entry[];
   catalog?: CatalogItem[]; onClose: () => void;
@@ -31,14 +52,12 @@ export function EntryForm({ kind, editing, user, catalog, onClose, onSave }: {
       classCc: editing?.classCc || (editing ? "" : saved?.classCc || "") };
   });
   const [productChanged,setProductChanged] = useState(false);
-  const [productSearch,setProductSearch] = useState("");
-  const [defectSearch,setDefectSearch] = useState("");
   const [items,setItems] = useState<DefectRow[]>([{ quantity:String(editing?.quantity ?? ""),code:editing?.code || "",description:editing?.description || "",position:editing?.position || "",station:editing?.station || "",catalogId:"" }]);
   const [reason,setReason] = useState("");
   const [error,setError] = useState("");
   const [saving,setSaving] = useState(false);
-  const visibleProducts = products.filter(p => p.code === context.pn || `${p.code} ${p.label} ${p.internal} ${p.classCc}`.toLowerCase().includes(productSearch.toLowerCase()));
-  const visibleDefects = defects.filter(d => items.some(i => i.catalogId === d.id) || `${d.code} ${d.label} ${d.sector} ${d.station}`.toLowerCase().includes(defectSearch.toLowerCase()));
+  const productOptions = products.map((p) => ({ id:p.id, label:`${p.code} · ${p.label}`, search:`${p.code} ${p.label} ${p.internal} ${p.classCc}` }));
+  const defectOptions = defects.map((d) => ({ id:d.id, label:`${d.code} · ${d.label} · ${d.sector} / ${d.station}`, search:`${d.code} ${d.label} ${d.category} ${d.sector} ${d.station}` }));
   function field(key: keyof typeof context,value:string) { setContext(c => ({...c,[key]:value})); }
   function itemField(index:number,key:keyof DefectRow,value:string) { setItems(rows => rows.map((r,i) => i === index ? {...r,[key]:value} : r)); }
   async function submit(event:React.FormEvent) {
@@ -63,34 +82,28 @@ export function EntryForm({ kind, editing, user, catalog, onClose, onSave }: {
         <label>Data<input type="date" required value={context.date} onChange={e => field("date",e.target.value)} /></label>
         <Choice label="Turno" value={context.shift} onChange={v => field("shift",v)} items={["1","2","3"].map(value => ({value,label:value+"º turno"}))} />
         <label>Linha<input required maxLength={160} placeholder="Ex.: SMT-1" value={context.line} onChange={e => field("line",e.target.value)} /></label>
-        <label>Buscar produto<input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="PN, modelo ou classificação" /></label>
-        <Choice label="PN / Modelo" value={context.pn || "select-product"} onChange={pn => {
-          const product = products.find(p => p.code === pn); if (!product) return;
-          setProductChanged(true); setContext(c => ({...c,pn,model:product.label,category:product.internal,classCc:product.classCc}));
-        }} items={[
-          {value:"select-product",label:"Selecione o produto"},
-          ...(editing && !productChanged ? [{value:editing.pn,label:editing.pn+" · "+editing.model+" (registro original)"}] : []),
-          ...visibleProducts.filter(p => !editing || productChanged || p.code !== editing.pn).map(p => ({value:p.code,label:p.code+" · "+p.label})),
-        ]} />
+        <CatalogPicker label="Produto (PN ou modelo)" value={context.pn ? `${context.pn} · ${context.model}` : ""} placeholder="Digite o PN ou modelo" options={productOptions} onSelect={id => {
+          const product = products.find(p => p.id === id); if (!product) return;
+          setProductChanged(true); setContext(c => ({...c,pn:product.code,model:product.label,category:product.internal,classCc:product.classCc}));
+        }} />
         <label>Interno<input readOnly value={context.category} placeholder="Preenchido pelo PN" /></label>
         <label>Class. CC<input readOnly value={context.classCc} placeholder={editing ? "Não informado no registro original" : "Preenchido pelo PN"} /></label>
       </div>{!catalog && <p className="notice">Sincronize para baixar os cadastros antes de fazer novos lançamentos.</p>}
       {catalog && !products.length && <p className="notice">Nenhum produto ativo. Cadastre em Gestão → Cadastros.</p>}</div>
       <div className="form-section"><h3>{kind === "production" ? "Total produzido no turno" : "Defeitos da primeira passagem"}</h3>
-        {kind === "defect" && <label>Buscar defeito<input value={defectSearch} onChange={e => setDefectSearch(e.target.value)} placeholder="Código, descrição, setor ou estação" /></label>}
         {items.map((item,index) => <div className="defect-item" key={index}>
           {kind === "defect" && <div className="item-title"><b>Defeito {index+1}</b>{items.length>1 && <button type="button" className="icon-button" aria-label={"Remover defeito "+(index+1)} onClick={() => setItems(items.filter((_,i) => i!==index))}><Trash2 size={17}/></button>}</div>}
-          <div className="form-grid">
-            <label>Quantidade<input type="number" inputMode="numeric" min={kind === "production" ? 0 : 1} max={10000000} step={1} required value={item.quantity} onChange={e => itemField(index,"quantity",e.target.value)} /></label>
+          <div className={kind === "defect" ? "defect-fields" : "form-grid"}>
             {kind === "defect" && <>
-              <Choice label="Código do defeito" value={item.catalogId || "original"} onChange={id => {
+              <CatalogPicker label="Defeito (código ou descrição)" value={item.code ? `${item.code} · ${item.description}` : ""} placeholder="Digite o código ou a descrição" options={defectOptions} onSelect={id => {
                 const defect = defects.find(d => d.id === id); if (!defect) return;
                 setItems(rows => rows.map((r,i) => i === index ? {...r,catalogId:id,code:defect.code,description:defect.label,station:defect.station} : r));
-              }} items={[{value:"original",label:editing ? `${editing.code} · ${editing.description} (registro original)` : "Selecione o defeito"},...visibleDefects.map(d => ({value:d.id,label:`${d.code} · ${d.label} · ${d.sector} / ${d.station}`}))]} />
-              <label>Estação<input readOnly value={item.station} /></label>
+              }} />
+              <label>Quantidade<input type="number" inputMode="numeric" min={1} max={10000000} step={1} required value={item.quantity} onChange={e => itemField(index,"quantity",e.target.value)} /></label>
               <label>Posição mecânica<input required maxLength={160} placeholder="Ex.: U2, R24, C1" value={item.position} onChange={e => itemField(index,"position",e.target.value)} /></label>
-              <label>Descrição do defeito<input readOnly value={item.description} /></label>
+              {item.code && <p className="selected-defect"><b>{item.description}</b><span>Estação: {item.station || "não informada"}</span></p>}
             </>}
+            {kind === "production" && <label>Quantidade<input type="number" inputMode="numeric" min={0} max={10000000} step={1} required value={item.quantity} onChange={e => itemField(index,"quantity",e.target.value)} /></label>}
           </div>
         </div>)}
         {kind === "defect" && !editing && <button type="button" className="secondary" onClick={() => setItems([...items,{quantity:"",code:"",description:"",position:"",station:"",catalogId:""}])}><Plus size={17}/>Adicionar outro defeito</button>}

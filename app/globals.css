@@ -663,6 +663,56 @@ label input {
   border-radius: 8px;
   margin-bottom: 12px;
 }
+.defect-fields {
+  display: grid;
+  grid-template-columns: minmax(120px, .65fr) minmax(220px, 1.35fr);
+  gap: 14px 16px;
+}
+.catalog-picker { grid-column: 1 / -1; min-width: 0; }
+.catalog-picker-control { position: relative; min-width: 0; margin-top: 7px; }
+.catalog-picker-control > input { width: 100%; }
+.catalog-picker-results {
+  position: absolute;
+  z-index: 80;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #cfd6dc;
+  border-radius: 7px;
+  background: white;
+  box-shadow: 0 12px 28px rgb(25 35 45 / 18%);
+}
+.catalog-picker-results button {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #edf0f2;
+  border-radius: 0;
+  background: white;
+  color: #26323c;
+  text-align: left;
+  font-weight: 500;
+}
+.catalog-picker-results button:hover,
+.catalog-picker-results button:focus { background: #fff3e8; color: #9d4b06; }
+.catalog-picker-results p { margin: 0; padding: 12px; color: #6e7881; font-size: 13px; }
+.selected-defect {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #e9edf0;
+  color: #3b4650;
+  overflow-wrap: anywhere;
+}
+.selected-defect span { color: #68737d; white-space: nowrap; }
 .item-title {
   display: flex;
   align-items: center;
@@ -835,6 +885,15 @@ label input {
   }
   .form-grid label {
     min-width: 0;
+  }
+  .defect-fields {
+    grid-template-columns: 1fr;
+  }
+  .selected-defect {
+    display: grid;
+  }
+  .selected-defect span {
+    white-space: normal;
   }
   .choice {
     font-size: 14px !important;
