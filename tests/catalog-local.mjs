@@ -9,7 +9,7 @@ async function request(path,body,overrides={}) {
 }
 let result=await request('/api/catalog'); assert.equal(result.status,200,JSON.stringify(result.data));
 assert.equal(result.data.filter(i=>i.kind==='product' && !i.code.startsWith('QA-')).length,251);
-const item={id:crypto.randomUUID(),kind:'product',code:'QA-'+Date.now(),label:'QA TESTE LOCAL',internal:'ADAPTADOR',classCc:'SMT',station:'',sector:'',active:1,revision:0};
+const item={id:crypto.randomUUID(),kind:'product',code:'QA-'+Date.now(),label:'QA TESTE LOCAL',internal:'ADAPTADOR',classCc:'SMT',station:'',sector:'',category:'',active:1,revision:0};
 assert.equal((await request('/api/catalog',item)).status,200);
 assert.equal((await request('/api/catalog',{...item,id:crypto.randomUUID()})).status,409);
 assert.equal((await request('/api/catalog',{...item,id:crypto.randomUUID(),code:'QA-INVALID',classCc:''})).status,400);

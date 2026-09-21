@@ -20,6 +20,9 @@
       }
     ],
     "paths": {
+      "@/components/*": ["./src/frontend/components/*"],
+      "@/lib/*": ["./src/frontend/lib/*"],
+      "@/hooks/*": ["./src/frontend/hooks/*"],
       "@/*": ["./*"]
     },
     "types": ["node", "@cloudflare/workers-types"]

@@ -1,4 +1,4 @@
-export type Role = "operador" | "supervisor" | "lider" | "tecnica";
+export type Role = "operador" | "supervisor" | "lider" | "tecnica" | "engenharia";
 export type User = {
   id: string;
   name: string;

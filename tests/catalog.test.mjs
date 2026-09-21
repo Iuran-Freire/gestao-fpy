@@ -7,8 +7,8 @@ import { validateEntry } from "../src/shared/domain/fpy.ts";
 
 function migrated() {
   const db = new DatabaseSync(":memory:");
-  for (const file of readdirSync(new URL("../drizzle/",import.meta.url)).filter(f => f.endsWith(".sql")).sort())
-    db.exec(readFileSync(new URL("../drizzle/"+file,import.meta.url),"utf8"));
+  for (const file of readdirSync(new URL("../src/backend/database/migrations/",import.meta.url)).filter(f => f.endsWith(".sql")).sort())
+    db.exec(readFileSync(new URL("../src/backend/database/migrations/"+file,import.meta.url),"utf8"));
   return db;
 }
 test("importação mantém 251 PNs, ambas classificações e todos os defeitos", () => {
@@ -18,14 +18,14 @@ test("importação mantém 251 PNs, ambas classificações e todos os defeitos",
   for (const pn of ['16B071-0','16B072-0','24V0008-0','90K0008-0']) assert.equal(db.prepare("SELECT count(*) AS n FROM catalog WHERE kind='product' AND code=?").get(pn).n,0);
   const frecom=db.prepare("SELECT * FROM catalog WHERE code='33K0008-0'").get();
   assert.equal(frecom.label,'24W FRECOM'); assert.equal(frecom.internal,'ADAPTADOR'); assert.equal(frecom.class_cc,'ADAPTADOR');
-  for (const row of db.prepare("SELECT id,kind,code,label,internal,class_cc AS classCc,station,sector,active,revision FROM catalog").all()) assert.doesNotThrow(() => validateCatalog(row));
+  for (const row of db.prepare("SELECT id,kind,code,label,internal,class_cc AS classCc,station,sector,category,active,revision FROM catalog").all()) assert.doesNotThrow(() => validateCatalog(row));
   assert.equal(db.prepare("SELECT count(*) AS n FROM catalog WHERE code='AUT10'").get().n,2);
   assert.equal(db.prepare("SELECT count(*) AS n FROM catalog WHERE code='RFT01'").get().n,2);
   db.close();
 });
 test("unicidade de PN e de defeito por setor/estação, revisão e auditoria", () => {
   const db=migrated();
-  assert.throws(() => db.exec("INSERT INTO catalog SELECT 'duplicate-pn',kind,lower(code),label,internal,class_cc,station,sector,active,revision,changed_by,updated_at FROM catalog WHERE code='33K0008-0'"),/UNIQUE/);
+  assert.throws(() => db.exec("INSERT INTO catalog(id,kind,code,label,internal,class_cc,station,sector,category,active,revision,changed_by,updated_at) SELECT 'duplicate-pn',kind,lower(code),label,internal,class_cc,station,sector,category,active,revision,changed_by,updated_at FROM catalog WHERE code='33K0008-0'"),/UNIQUE/);
   const item=db.prepare("SELECT * FROM catalog WHERE code='33K0008-0'").get();
   const before=db.prepare("SELECT count(*) AS n FROM catalog_audit").get().n;
   const change=db.prepare("UPDATE catalog SET active=0,revision=revision+1,changed_by='qa' WHERE id=? AND revision=?");
@@ -37,7 +37,7 @@ test("unicidade de PN e de defeito por setor/estação, revisão e auditoria", (
   db.close();
 });
 test("cadastro exige classificações e produção preserva Interno / Class. CC", () => {
-  const product={id:'test-product',kind:'product',code:' 33k0008-0 ',label:'24W FRECOM',internal:'adaptador',classCc:'adaptador',station:'',sector:'',active:1,revision:0};
+  const product={id:'test-product',kind:'product',code:' 33k0008-0 ',label:'24W FRECOM',internal:'adaptador',classCc:'adaptador',station:'',sector:'',category:'',active:1,revision:0};
   assert.equal(validateCatalog(product).code,'33K0008-0');
   assert.throws(() => validateCatalog({...product,classCc:''}),/Class/);
   assert.throws(() => validateCatalog({...product,revision:-1}),/Estado/);

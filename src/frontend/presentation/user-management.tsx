@@ -50,6 +50,7 @@ const roles = [
   { value: "supervisor", label: "Supervisor" },
   { value: "lider", label: "Líder" },
   { value: "tecnica", label: "Técnica" },
+  { value: "engenharia", label: "Engenharia" },
 ];
 export function UserEditor({
   target,

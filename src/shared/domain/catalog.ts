@@ -7,6 +7,7 @@ export type CatalogItem = {
   classCc: string;
   station: string;
   sector: string;
+  category: string;
   active: number;
   revision: number;
 };
@@ -16,7 +17,7 @@ export function validateCatalog(input: unknown): CatalogItem {
   const item = { ...input } as CatalogItem;
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(item.id) || !["product", "defect"].includes(item.kind))
     throw Error("Identificação inválida.");
-  for (const key of ["code", "label", "internal", "classCc", "station", "sector"] as const) {
+  for (const key of ["code", "label", "internal", "classCc", "station", "sector", "category"] as const) {
     if (typeof item[key] !== "string" || item[key].length > 160) throw Error("Campo inválido: " + key);
     item[key] = item[key].trim();
   }
@@ -27,8 +28,9 @@ export function validateCatalog(input: unknown): CatalogItem {
   if (item.kind === "product") {
     if (!item.internal || !item.classCc) throw Error("Informe Interno e Class. CC.");
     item.station = item.sector = "";
+    item.category = "";
   } else {
-    if (!item.station || !item.sector) throw Error("Informe estação e setor do defeito.");
+    if (!item.station || !item.sector || !item.category) throw Error("Informe estação, setor e categoria do defeito.");
     item.internal = item.classCc = "";
   }
   if (![0, 1].includes(item.active) || !Number.isSafeInteger(item.revision) || item.revision < 0)

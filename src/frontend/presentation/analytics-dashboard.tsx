@@ -112,6 +112,16 @@ export default function AnalyticsDashboard({ entries, year, onYearChange }: { en
     index: production > 0 ? Number(((quantity / production) * 100).toFixed(2)) : null,
     fpy: production > 0 ? Number((100 - (quantity / production) * 100).toFixed(2)) : null,
   })).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+  const topDefectsByShift = ["1", "2", "3"].map((shiftNumber) => {
+    const totals = new Map<string, { code: string; description: string; quantity: number }>();
+    filteredEntries.filter((entry) => entry.kind === "defect" && entry.shift === shiftNumber).forEach((entry) => {
+      const key = `${entry.code}|${entry.description}`;
+      const current = totals.get(key) || { code: entry.code, description: entry.description || "Sem descrição", quantity: 0 };
+      current.quantity += entry.quantity;
+      totals.set(key, current);
+    });
+    return { shift: shiftNumber, items: [...totals.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5) };
+  });
 
   const familyEntries = entries.filter((entry) =>
     (month === "all" || Number(entry.date.slice(5, 7)) === Number(month)) &&
@@ -157,6 +167,7 @@ export default function AnalyticsDashboard({ entries, year, onYearChange }: { en
         <section className="panel chart-card"><div className="panel-head"><div><h2>Índice por falha · Top 5</h2><span>Falhas mais representativas</span></div></div><div className="chart-area powerbi-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={byFailure} margin={{ top: 16, right: 12, left: -10, bottom: 48 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e8eb" /><XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-18} textAnchor="end" interval={0} /><YAxis yAxisId="index" tickFormatter={(value) => value + "%"} tick={{ fontSize: 11 }} /><YAxis yAxisId="fpy" orientation="right" domain={[0, 100]} hide /><Tooltip content={<ChartTooltip />} /><Legend /><Bar yAxisId="index" dataKey="index" name="Índice de falhas" fill="#f3b66f" radius={[3, 3, 0, 0]} /><Line yAxisId="fpy" type="monotone" dataKey="fpy" name="FPY" stroke="#ef881b" strokeWidth={3} dot={{ r: 4 }} /></ComposedChart></ResponsiveContainer></div></section>
         <YieldChart data={daily} title="FPY por dia" subtitle="Resultado diário · últimos 31 dias" />
         <section className="panel chart-card"><div className="panel-head"><div><h2>FPY total por família</h2><span>Comparação dos processos disponíveis</span></div></div><div className="chart-area powerbi-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={familySummary} margin={{ top: 16, right: 12, left: -10, bottom: 28 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e8eb" /><XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-12} textAnchor="end" interval={0} /><YAxis domain={["dataMin - 2", 100]} tickFormatter={(value) => value + "%"} tick={{ fontSize: 11 }} /><Tooltip content={<ChartTooltip />} /><Bar dataKey="fpy" name="FPY" fill="#f3b66f" radius={[3, 3, 0, 0]} /></ComposedChart></ResponsiveContainer></div></section>
+        <section className="panel chart-card chart-wide shift-defects"><div className="panel-head"><div><h2>Top defeitos por turno</h2><span>As cinco falhas com maior quantidade em cada turno</span></div></div><div className="shift-defect-grid">{topDefectsByShift.map((group) => <article key={group.shift}><h3>{group.shift}º turno</h3>{group.items.length ? group.items.map((item, index) => <div className="shift-defect-row" key={`${item.code}-${item.description}`}><span className="rank">{index + 1}</span><div><b>{item.code}</b><small>{item.description}</small><i style={{ width: `${Math.max(6, (item.quantity / group.items[0].quantity) * 100)}%` }} /></div><strong>{number(item.quantity)}</strong></div>) : <p>Sem defeitos no período.</p>}</article>)}</div></section>
       </div>
     </>}
   </div>;

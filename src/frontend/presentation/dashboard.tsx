@@ -51,6 +51,7 @@ import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
 import CatalogManagement from "./catalog-management";
 import AnalyticsDashboard from "./analytics-dashboard";
+import ActionPlanManagement from "./action-plan-management";
 const percent = (v: number | null) =>
   v === null
     ? "—"
@@ -61,6 +62,7 @@ const roleLabel: Record<string, string> = {
   supervisor: "Supervisor",
   lider: "Líder",
   tecnica: "Técnica",
+  engenharia: "Engenharia",
 };
 type InstallPrompt = Event & { prompt: () => Promise<void> };
 type HistoryItem = {
@@ -486,9 +488,10 @@ export default function Dashboard() {
               <TabsTrigger value="production">Produção</TabsTrigger>
             </>}
             {area === "management" && <>
+              <TabsTrigger value="plans" onClick={() => setManagementTab("plans")}>PQC / Planos de ação</TabsTrigger>
               {app.local && (app.local.user.owner === 1 || canCorrect(app.local.user.role)) && <TabsTrigger value="catalog" onClick={() => setManagementTab("catalog")}>Cadastros</TabsTrigger>}
               <TabsTrigger value="sync" onClick={() => setManagementTab("sync")}>Sincronização</TabsTrigger>
-              {app.local && canCorrect(app.local.user.role) && (
+              {app.local && (app.local.user.owner === 1 || ["supervisor", "lider", "tecnica"].includes(app.local.user.role)) && (
                 <TabsTrigger value="admin" onClick={() => setManagementTab("admin")}>Usuários e backup</TabsTrigger>
               )}
             </>}
@@ -767,6 +770,9 @@ export default function Dashboard() {
           </TabsContent>
           <TabsContent value="catalog" hidden={area !== "management"}>
             {app.local && (app.local.user.owner === 1 || canCorrect(app.local.user.role)) && <CatalogManagement items={app.local.catalog} online={app.online} onUpdated={app.sync} />}
+          </TabsContent>
+          <TabsContent value="plans" hidden={area !== "management"}>
+            {app.local && <ActionPlanManagement user={app.local.user} catalog={app.local.catalog} online={app.online} />}
           </TabsContent>
           <TabsContent value="admin" hidden={area !== "management"}>
             {app.local && (

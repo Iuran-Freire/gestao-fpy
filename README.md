@@ -10,8 +10,8 @@ Há também uma configuração independente em `wrangler.cloudflare.jsonc` para 
 - `src/backend/`: autenticação, permissões, casos de uso do servidor e acesso ao D1/R2.
 - `src/shared/domain/`: tipos, validações e cálculos usados pelo frontend e pelo backend, sem dependência de interface ou banco.
 - `app/`: entrada do Next.js. `page.tsx` carrega o frontend e `app/api/` contém somente os adaptadores HTTP do backend.
-- `components/ui/`: componentes visuais reutilizáveis do design system.
-- `db/schema.ts` e `drizzle/`: esquema do backend e migrações versionadas, incluindo auditoria e proteção de revisão.
+- `src/frontend/components/ui/`: componentes visuais reutilizáveis do design system.
+- `src/backend/database/schema.ts` e `src/backend/database/migrations/`: esquema do backend e migrações versionadas, incluindo auditoria e proteção de revisão.
 - `public/`: logo oficial, ícones e recursos PWA.
 - `tests/`: regras de domínio e integração local.
 
@@ -61,7 +61,7 @@ O manifesto lista todos os objetos JSON de um backup completo. Para restauraçã
 - `node tests/users-local.mjs`: contas fictícias, login, permissões, edição, desativação, redefinição e revogação de sessões.
 - `npx tsc --noEmit`: verificação TypeScript.
 
-Para banco local, aplicar as migrações de `drizzle/` em ordem com Wrangler usando `dist/server/wrangler.json` e `.wrangler/state`. Não repetir migrações aplicadas. O banco local e os registros QA não são publicados.
+Para banco local, aplicar as migrações de `src/backend/database/migrations/` em ordem com Wrangler usando `dist/server/wrangler.json` e `.wrangler/state`. Não repetir migrações aplicadas. O banco local e os registros QA não são publicados.
 
 ## Pendências externas
 
@@ -88,8 +88,14 @@ Os testes usam dados fictícios somente no banco local. O conjunto anual real ai
 
 Gestão → Cadastros permite cadastrar, editar, inativar e reativar produtos e defeitos. Supervisor, líder, técnica e administrador principal podem alterar. Operadores consultam as opções nos lançamentos. Produtos guardam PN, modelo, Interno e Class. CC separadamente. Defeitos são identificados por código, setor e estação, pois o código sozinho não é único nas bases Excel. As alterações usam revisão e auditoria; registros anteriores não são reescritos.
 
-A migração `drizzle/0004_catalog.sql` cria a base e importa 251 PNs e 1.210 defeitos das abas CLASSIFICAÇÃO e DADOS dos seis arquivos BD_*_2026.xlsm fornecidos em 17/09/2026. Os PNs 16B071-0, 16B072-0, 24V0008-0 e 90K0008-0 foram excluídos da importação por orientação do responsável. As planilhas originais não são alteradas. Os cadastros acompanham a sincronização offline e o backup versão 3.
+A migração `src/backend/database/migrations/0004_catalog.sql` cria a base e importa 251 PNs e 1.210 defeitos das abas CLASSIFICAÇÃO e DADOS dos seis arquivos BD_*_2026.xlsm fornecidos em 17/09/2026. Os PNs 16B071-0, 16B072-0, 24V0008-0 e 90K0008-0 foram excluídos da importação por orientação do responsável. As planilhas originais não são alteradas. Os cadastros acompanham a sincronização offline e o backup versão 4.
 
 Na restauração em banco isolado, após criar o esquema, remover os cadastros e auditorias de carga inicial antes de importar o backup. Suspender os gatilhos de auditoria de `catalog` durante a restauração, preservando os IDs do arquivo, e recriá-los ao final. O teste `tests/backup-local.mjs` verifica esse procedimento e as contagens de ambas as tabelas.
 
-Antes de executar esta versão, aplicar as migrações SQL em ordem no banco local, incluindo 0004. A migração não foi aplicada ao banco remoto. Para publicação futura, aplicar 0004 uma única vez ao banco de destino antes de disponibilizar esta versão. Não repetir a migração: a importação não sobrescreve cadastros existentes. A coluna de categoria dos registros guarda Interno; Class. CC é um campo adicional, vazio nos registros antigos.
+As migrações 0004 e 0005 foram aplicadas ao D1 remoto em 20/09/2026. Não repetir essas migrações. A coluna de categoria dos registros guarda Interno; Class. CC é um campo adicional, vazio nos registros antigos.
+
+## PQC e planos de ação
+
+Gestão → PQC / Planos de ação separa a abertura feita pela Qualidade da análise técnica. A abertura registra data, turno, linha, produto, defeito, categoria, quantidade, posição e evidência inicial. A etapa de análise registra contenção, causa raiz, ação corretiva, responsável, prazo e verificação de eficácia. Um plano só pode ser concluído com os campos de fechamento preenchidos. Cada alteração preserva autor, datas e revisão para impedir sobrescrita silenciosa.
+
+O perfil Engenharia pode tratar planos de ação. Operadores consultam; técnica, liderança, supervisão e administrador podem abrir PQCs e acompanhar o fluxo. O catálogo de defeitos agora inclui categoria editável. O Dashboard mostra as cinco falhas com maior quantidade em cada turno para os filtros selecionados.

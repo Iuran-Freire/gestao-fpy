@@ -112,6 +112,7 @@ export const catalog = sqliteTable("catalog", {
   label: text("label").notNull(), internal: text("internal").notNull().default(""),
   classCc: text("class_cc").notNull().default(""), station: text("station").notNull().default(""),
   sector: text("sector").notNull().default(""), active: integer("active").notNull().default(1),
+  category: text("category").notNull().default(""),
   revision: integer("revision").notNull().default(1), changedBy: text("changed_by").notNull(),
   updatedAt: text("updated_at").notNull(),
 }, t => [
@@ -122,3 +123,22 @@ export const catalogAudit = sqliteTable("catalog_audit", {
   id: integer("id").primaryKey({ autoIncrement: true }), itemId: text("item_id").notNull(),
   actor: text("actor").notNull(), before: text("before"), after: text("after").notNull(), at: text("at").notNull(),
 });
+
+export const actionPlans = sqliteTable("action_plans", {
+  id: text("id").primaryKey(), date: text("date").notNull(), shift: text("shift").notNull(),
+  line: text("line").notNull(), pn: text("pn").notNull(), model: text("model").notNull(),
+  quantity: integer("quantity").notNull(), defectCode: text("defect_code").notNull(),
+  defectDescription: text("defect_description").notNull(), category: text("category").notNull(),
+  position: text("position").notNull().default(""), evidence: text("evidence").notNull(),
+  containment: text("containment").notNull().default(""), rootCause: text("root_cause").notNull().default(""),
+  correctiveAction: text("corrective_action").notNull().default(""), verification: text("verification").notNull().default(""),
+  responsible: text("responsible").notNull().default(""), dueDate: text("due_date").notNull().default(""),
+  status: text("status").notNull().default("aberto"), openedBy: text("opened_by").notNull(),
+  engineeringBy: text("engineering_by"), createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(), completedAt: text("completed_at"),
+  revision: integer("revision").notNull().default(1),
+}, t => [index("action_plans_status_date").on(t.status, t.date), index("action_plans_defect").on(t.defectCode)]);
+export const actionPlanAudit = sqliteTable("action_plan_audit", {
+  id: integer("id").primaryKey({ autoIncrement: true }), planId: text("plan_id").notNull(),
+  actor: text("actor").notNull(), before: text("before"), after: text("after").notNull(), at: text("at").notNull(),
+}, t => [index("action_plan_audit_plan").on(t.planId)]);
