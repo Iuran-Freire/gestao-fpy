@@ -88,15 +88,15 @@ Os testes usam dados fictícios somente no banco local. O conjunto anual real ai
 
 Gestão → Cadastros permite cadastrar, editar, inativar e reativar produtos e defeitos. Supervisor, líder, técnica e administrador principal podem alterar. Operadores consultam as opções nos lançamentos. Produtos guardam PN, modelo, Interno e Class. CC separadamente. Defeitos são identificados por código, setor e estação, pois o código sozinho não é único nas bases Excel. As alterações usam revisão e auditoria; registros anteriores não são reescritos.
 
-A migração `src/backend/database/migrations/0004_catalog.sql` cria a base e importa 251 PNs e 1.210 defeitos das abas CLASSIFICAÇÃO e DADOS dos seis arquivos BD_*_2026.xlsm fornecidos em 17/09/2026. Os PNs 16B071-0, 16B072-0, 24V0008-0 e 90K0008-0 foram excluídos da importação por orientação do responsável. As planilhas originais não são alteradas. Os cadastros acompanham a sincronização offline e o backup versão 4.
+A migração `src/backend/database/migrations/0004_catalog.sql` cria a base e importa 251 PNs e 1.210 defeitos das abas CLASSIFICAÇÃO e DADOS dos seis arquivos BD_*_2026.xlsm fornecidos em 17/09/2026. Os PNs 16B071-0, 16B072-0, 24V0008-0 e 90K0008-0 foram excluídos da importação por orientação do responsável. As planilhas originais não são alteradas. Os cadastros acompanham a sincronização offline e o backup versão 5.
 
 Na restauração em banco isolado, após criar o esquema, remover os cadastros e auditorias de carga inicial antes de importar o backup. Suspender os gatilhos de auditoria de `catalog` durante a restauração, preservando os IDs do arquivo, e recriá-los ao final. O teste `tests/backup-local.mjs` verifica esse procedimento e as contagens de ambas as tabelas.
 
-As migrações 0004 e 0005 foram aplicadas ao D1 remoto em 20/09/2026. Não repetir essas migrações. A coluna de categoria dos registros guarda Interno; Class. CC é um campo adicional, vazio nos registros antigos.
+As migrações 0004 e a primeira versão de 0005 foram aplicadas ao D1 remoto em 20/09/2026. Em 23/09/2026, o esquema antigo e vazio de planos foi preservado como `action_plans_legacy`, e a tabela `action_plans` foi criada no formato atual por `scripts/cloudflare/upgrade-legacy-action-plans.sql`. Não repetir essa atualização no banco remoto nem aplicá-la a bancos novos que já usam a versão atual de 0005. A coluna de categoria dos registros guarda Interno; Class. CC é um campo adicional, vazio nos registros antigos.
 
 ## PQC e planos de ação
 
-Gestão → PQC / Planos de ação separa a abertura feita pela Qualidade da análise técnica. A abertura registra data, turno, linha, produto, defeito, categoria, quantidade, posição e evidência inicial. A etapa de análise registra contenção, causa raiz, ação corretiva, responsável, prazo e verificação de eficácia. Um plano só pode ser concluído com os campos de fechamento preenchidos. Cada alteração preserva autor, datas e revisão para impedir sobrescrita silenciosa.
+Gestão → Planos de ação vincula cada plano a um lançamento de defeito existente. A Qualidade registra a evidência inicial; a Engenharia registra contenção, causa raiz, ação corretiva, responsável e prazo. Um plano só pode ser concluído com os campos de fechamento preenchidos. A revisão impede sobrescrita silenciosa.
 
 O perfil Engenharia pode tratar planos de ação. Operadores consultam; técnica, liderança, supervisão e administrador podem abrir PQCs e acompanhar o fluxo. O catálogo de defeitos agora inclui categoria editável. O Dashboard mostra as cinco falhas com maior quantidade em cada turno para os filtros selecionados.
 

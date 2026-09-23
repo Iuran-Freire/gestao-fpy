@@ -5,16 +5,16 @@ export async function createBackup() {
     day = new Date().toISOString().slice(0, 10),
     marker = "backups/" + day + "/manifest.json";
   const previous = await b.get(marker);
-  if (previous && (await previous.json<{ version: number }>()).version === 4)
+  if (previous && (await previous.json<{ version: number }>()).version === 5)
     return { date: day, existing: true };
   const run = crypto.randomUUID(),
     prefix = "backups/" + day + "/" + run + "/",
     files: string[] = [];
   const start = await db
     .prepare(
-      "SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u, (SELECT MAX(id) FROM catalog_audit) AS c, (SELECT MAX(id) FROM action_plan_audit) AS p",
+      "SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u, (SELECT MAX(id) FROM catalog_audit) AS c, (SELECT MAX(updated_at) FROM action_plans) AS p",
     )
-    .first<{ n: number; u: number; c: number; p: number }>();
+    .first<{ n: number; u: number; c: number; p: string | null }>();
   for (const table of [
     "records",
     "users",
@@ -27,7 +27,6 @@ export async function createBackup() {
     "catalog",
     "catalog_audit",
     "action_plans",
-    "action_plan_audit",
   ]) {
     let cursor = 0,
       page = 0;
@@ -49,9 +48,9 @@ export async function createBackup() {
   }
   const end = await db
     .prepare(
-      "SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u, (SELECT MAX(id) FROM catalog_audit) AS c, (SELECT MAX(id) FROM action_plan_audit) AS p",
+      "SELECT (SELECT MAX(rowid) FROM operations) AS n, (SELECT MAX(id) FROM user_audit) AS u, (SELECT MAX(id) FROM catalog_audit) AS c, (SELECT MAX(updated_at) FROM action_plans) AS p",
     )
-    .first<{ n: number; u: number; c: number; p: number }>();
+    .first<{ n: number; u: number; c: number; p: string | null }>();
   if (start?.n !== end?.n || start?.u !== end?.u || start?.c !== end?.c || start?.p !== end?.p) {
     await b.delete(files);
     throw Error("Novos lançamentos durante o backup. Tente novamente.");
@@ -59,7 +58,7 @@ export async function createBackup() {
   await b.put(
     marker,
     JSON.stringify({
-      version: 4,
+      version: 5,
       date: day,
       createdAt: new Date().toISOString(),
       files,
