@@ -99,3 +99,7 @@ As migrações 0004 e 0005 foram aplicadas ao D1 remoto em 20/09/2026. Não repe
 Gestão → PQC / Planos de ação separa a abertura feita pela Qualidade da análise técnica. A abertura registra data, turno, linha, produto, defeito, categoria, quantidade, posição e evidência inicial. A etapa de análise registra contenção, causa raiz, ação corretiva, responsável, prazo e verificação de eficácia. Um plano só pode ser concluído com os campos de fechamento preenchidos. Cada alteração preserva autor, datas e revisão para impedir sobrescrita silenciosa.
 
 O perfil Engenharia pode tratar planos de ação. Operadores consultam; técnica, liderança, supervisão e administrador podem abrir PQCs e acompanhar o fluxo. O catálogo de defeitos agora inclui categoria editável. O Dashboard mostra as cinco falhas com maior quantidade em cada turno para os filtros selecionados.
+
+## Publicação no Sites
+
+O artefato de publicação deve manter `dist/server/index.js` e copiar o conteúdo gerado em `dist/.openai` para `.openai` na raiz do pacote. Assim, o executor encontra o Worker e aplica as migrações D1 incluídas no mesmo build.
