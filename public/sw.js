@@ -1,4 +1,4 @@
-const CACHE = "fpy-shell-v1";
+const CACHE = "fpy-shell-v2";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -61,21 +61,23 @@ self.addEventListener("fetch", (event) => {
   }
   if (/\.(js|css|svg|png|woff2?)$/.test(url.pathname)) {
     event.respondWith(
-      caches.match(event.request).then(
-        (cached) =>
-          cached ||
-          fetch(event.request).then(async (r) => {
-            if (r.ok) {
-              const c = await caches.open(CACHE);
-              await c.put(event.request, r.clone());
-            }
-            return r;
-          }),
-      ),
+      fetch(event.request)
+        .then(async (response) => {
+          if (response.ok) {
+            const cache = await caches.open(CACHE);
+            await cache.put(event.request, response.clone());
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request)),
     );
   }
 });
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
   if (event.data?.type === "CACHE_ASSETS" && Array.isArray(event.data.urls))
     event.waitUntil(
       caches.open(CACHE).then((cache) =>

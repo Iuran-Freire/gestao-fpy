@@ -7,8 +7,9 @@ import { validateEntry } from "../src/shared/domain/fpy.ts";
 
 function migrated() {
   const db = new DatabaseSync(":memory:");
-  for (const file of readdirSync(new URL("../src/backend/database/migrations/",import.meta.url)).filter(f => f.endsWith(".sql")).sort())
-    db.exec(readFileSync(new URL("../src/backend/database/migrations/"+file,import.meta.url),"utf8"));
+  const migrations = new URL("../src/backend/database/migrations/", import.meta.url);
+  for (const file of readdirSync(migrations).filter(f => f.endsWith(".sql")).sort())
+    db.exec(readFileSync(new URL(file, migrations),"utf8"));
   return db;
 }
 test("importação mantém 251 PNs, ambas classificações e todos os defeitos", () => {

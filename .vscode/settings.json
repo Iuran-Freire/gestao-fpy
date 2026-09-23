@@ -1,0 +1,29 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, pnpm-workspace.yaml, .gitignore, .npmrc, cloudflare-env.d.ts, components.json, drizzle.config.ts, eslint.config.mjs, next.config.ts, postcss.config.mjs, tsconfig.json, vite.config.ts, wrangler.cloudflare.jsonc"
+  },
+  "files.exclude": {
+    ".openai": true,
+    ".pnpm-store": true,
+    ".vscode": true,
+    "build": true,
+    "node_modules": true,
+    "scripts": true
+  },
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/.vinext/**": true,
+    "**/.wrangler/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/.next": true,
+    "**/.vinext": true,
+    "**/.wrangler": true,
+    "**/dist": true,
+    "**/node_modules": true
+  }
+}

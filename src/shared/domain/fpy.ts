@@ -1,4 +1,4 @@
-export type Role = "operador" | "supervisor" | "lider" | "tecnica" | "engenharia";
+export type Role = "operador" | "supervisor" | "lider" | "tecnica" | "qualidade" | "engenharia";
 export type User = {
   id: string;
   name: string;
@@ -39,7 +39,7 @@ export type Mutation = {
   reason?: string;
 };
 export function canCorrect(role: Role) {
-  return role !== "operador";
+  return ["supervisor", "lider", "tecnica", "qualidade"].includes(role);
 }
 export function groupKey(e: Pick<Entry, "date" | "shift" | "line" | "pn">) {
   return JSON.stringify([

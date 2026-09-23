@@ -17,4 +17,4 @@ app/page ──► frontend ──► shared
 
 O frontend acessa o backend somente por `/api`. O backend não importa componentes ou armazenamento do navegador. O código em `shared` não importa módulos de frontend ou backend. O ESLint verifica essas fronteiras.
 
-As pastas `app/` e `db/` permanecem na raiz porque são pontos de entrada exigidos pelo Next.js e pelo Drizzle.
+As pastas `app/` e `public/` permanecem na raiz porque são pontos de entrada exigidos pelo Next.js. O esquema e as migrações ficam em `backend/database/`, conforme os caminhos definidos no `drizzle.config.ts`.

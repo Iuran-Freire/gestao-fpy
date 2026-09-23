@@ -15,39 +15,19 @@ END;
 
 CREATE TABLE action_plans (
  id TEXT PRIMARY KEY NOT NULL,
- date TEXT NOT NULL,
- shift TEXT NOT NULL CHECK(shift IN ('1','2','3')),
- line TEXT NOT NULL,
- pn TEXT NOT NULL,
- model TEXT NOT NULL,
- quantity INTEGER NOT NULL CHECK(quantity > 0),
- defect_code TEXT NOT NULL,
- defect_description TEXT NOT NULL,
- category TEXT NOT NULL,
- position TEXT NOT NULL DEFAULT '',
+ record_id TEXT NOT NULL UNIQUE,
  evidence TEXT NOT NULL,
  containment TEXT NOT NULL DEFAULT '',
  root_cause TEXT NOT NULL DEFAULT '',
  corrective_action TEXT NOT NULL DEFAULT '',
- verification TEXT NOT NULL DEFAULT '',
  responsible TEXT NOT NULL DEFAULT '',
  due_date TEXT NOT NULL DEFAULT '',
- status TEXT NOT NULL DEFAULT 'aberto' CHECK(status IN ('aberto','em_analise','concluido')),
- opened_by TEXT NOT NULL,
- engineering_by TEXT,
- created_at TEXT NOT NULL,
+ status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','in_progress','completed')),
+ quality_by TEXT NOT NULL,
+ quality_at TEXT NOT NULL,
+ engineering_by TEXT NOT NULL DEFAULT '',
+ engineering_at TEXT NOT NULL DEFAULT '',
  updated_at TEXT NOT NULL,
- completed_at TEXT,
- revision INTEGER NOT NULL DEFAULT 1
+ revision INTEGER NOT NULL DEFAULT 1,
+ FOREIGN KEY(record_id) REFERENCES records(id)
 );
-CREATE INDEX action_plans_status_date ON action_plans(status,date);
-CREATE INDEX action_plans_defect ON action_plans(defect_code);
-CREATE TABLE action_plan_audit (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
- plan_id TEXT NOT NULL,
- actor TEXT NOT NULL,
- before TEXT,
- after TEXT NOT NULL,
- at TEXT NOT NULL
-);
-CREATE INDEX action_plan_audit_plan ON action_plan_audit(plan_id);

@@ -24,7 +24,7 @@ const restored = new DatabaseSync(":memory:");
 for (const file of readdirSync("drizzle")
   .filter((f) => f.endsWith(".sql"))
   .sort())
-  restored.exec(readFileSync("drizzle/" + file, "utf8"));
+  restored.exec(readFileSync("src/backend/database/migrations/" + file, "utf8"));
 let count = 0;
 // Restore into an isolated empty catalog, without replaying audit triggers.
 const catalogTriggers = restored.prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND tbl_name='catalog'").all();

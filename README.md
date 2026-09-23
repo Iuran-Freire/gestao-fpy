@@ -11,7 +11,7 @@ Há também uma configuração independente em `wrangler.cloudflare.jsonc` para 
 - `src/shared/domain/`: tipos, validações e cálculos usados pelo frontend e pelo backend, sem dependência de interface ou banco.
 - `app/`: entrada do Next.js. `page.tsx` carrega o frontend e `app/api/` contém somente os adaptadores HTTP do backend.
 - `src/frontend/components/ui/`: componentes visuais reutilizáveis do design system.
-- `src/backend/database/schema.ts` e `src/backend/database/migrations/`: esquema do backend e migrações versionadas, incluindo auditoria e proteção de revisão.
+- `src/backend/database/`: esquema e migrações versionadas, incluindo auditoria e proteção de revisão.
 - `public/`: logo oficial, ícones e recursos PWA.
 - `tests/`: regras de domínio e integração local.
 

@@ -52,6 +52,39 @@ body {
   color: #27313c;
   font-size: 16px;
 }
+.action-plan-dialog {
+  max-width: 860px;
+}
+.action-plan-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px 0 18px;
+}
+.action-plan-context > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  min-width: 0;
+}
+.action-plan-context span,
+.action-plan-context small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.action-plan-context b {
+  overflow-wrap: anywhere;
+}
+.full-field {
+  grid-column: 1 / -1;
+}
+@media (max-width: 700px) {
+  .action-plan-context { grid-template-columns: 1fr; }
+}
 button,
 a,
 input {
@@ -335,6 +368,229 @@ label input {
   }
   .metric > span {
     font-size: 11px;
+  }
+}
+
+/* Plano de Ação: campos amplos e leitura por etapas. */
+.plan-filters {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr 1.4fr 1.2fr 1.2fr;
+  gap: 16px 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  align-items: end;
+  overflow: visible;
+}
+.plan-filters label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  color: #566270;
+  font-size: 14px;
+  font-weight: 600;
+}
+.plan-filters input,
+.plan-filters select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #ccd4dd;
+  border-radius: 6px;
+  background: #fff;
+  color: #293544;
+  font: inherit;
+  font-weight: 400;
+}
+.plan-filters .plan-search {
+  grid-column: span 2;
+}
+.plan-filters .clear-plan-filters {
+  min-height: 46px;
+}
+.action-plan-workspace {
+  overflow: hidden;
+}
+.plan-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 18px;
+  overflow-x: auto;
+  border-bottom: 1px solid #e1e6eb;
+  background: #fafbfc;
+}
+.plan-tabs > button {
+  min-width: max-content;
+  min-height: 58px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #596673;
+}
+.plan-tabs > button.active {
+  color: #a84905;
+  box-shadow: inset 0 -4px #f28b20;
+}
+.plan-tabs button i {
+  display: inline-flex;
+  min-width: 24px;
+  height: 24px;
+  margin-left: 7px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #e8edf2;
+  color: #45515d;
+  font-size: 12px;
+  font-style: normal;
+}
+.plan-tabs .refresh-plans {
+  margin-left: auto;
+  gap: 7px;
+}
+.plan-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 22px 18px;
+}
+.plan-stage-head h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+}
+.plan-stage-head span {
+  color: #667482;
+}
+.plan-message {
+  margin: 0 22px 18px;
+}
+.plan-empty {
+  display: flex;
+  min-height: 180px;
+  padding: 28px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  color: #677481;
+  text-align: center;
+}
+.plan-empty b { color: #35414d; }
+.plan-result-limit {
+  margin: 0;
+  padding: 14px 22px;
+  border-top: 1px solid #e7ebef;
+  color: #667482;
+  font-size: 13px;
+}
+.badge.plan-open { background: #fff1dc; color: #9a4d08; }
+.badge.plan-in_progress { background: #e8f1ff; color: #215b9c; }
+.badge.plan-completed { background: #e5f6ec; color: #247546; }
+.action-plan-dialog textarea[readonly],
+.action-plan-dialog input[readonly] {
+  background: #f4f6f8;
+  color: #53606d;
+}
+.entry-dialog.action-plan-dialog {
+  width: min(920px, calc(100vw - 32px)) !important;
+  max-width: 920px !important;
+  padding: 30px 34px !important;
+}
+.action-plan-dialog .action-plan-context {
+  gap: 14px;
+  margin: 10px 0 6px;
+}
+.action-plan-dialog .action-plan-context > div {
+  min-height: 112px;
+  justify-content: flex-start;
+  gap: 7px;
+  padding: 16px 18px;
+}
+.action-plan-dialog .action-plan-context b {
+  font-size: 16px;
+  line-height: 1.45;
+}
+.action-plan-dialog form {
+  display: flex;
+  flex-direction: column;
+}
+.action-plan-dialog .form-section {
+  margin: 0;
+  padding: 24px 0 26px;
+  border-top: 1px solid #e2e7ec;
+}
+.action-plan-dialog .form-section:first-child {
+  margin-top: 18px;
+}
+.action-plan-dialog .form-section h3 {
+  margin: 0 0 18px;
+  color: #27313c;
+  font-size: 17px;
+}
+.action-plan-dialog .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 24px;
+}
+.action-plan-dialog label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  color: #35414d;
+  line-height: 1.35;
+}
+.action-plan-dialog input,
+.action-plan-dialog textarea {
+  width: 100%;
+  margin-top: 0;
+  border: 1px solid #cbd4dd;
+  border-radius: 7px;
+  background: #fff;
+  color: #26323f;
+  font: inherit;
+}
+.action-plan-dialog textarea {
+  min-height: 112px;
+  padding: 12px 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.action-plan-dialog .form-section:first-child textarea {
+  min-height: 138px;
+}
+.action-plan-dialog textarea::placeholder {
+  color: #8793a0;
+}
+.action-plan-dialog .full-field {
+  grid-column: 1 / -1;
+}
+.action-plan-dialog .form-hint {
+  margin-top: 12px;
+  color: #667482;
+}
+.action-plan-dialog .form-footer {
+  margin-top: 0;
+  padding-top: 20px;
+}
+@media (max-width: 700px) {
+  .plan-tabs { padding: 0 8px; }
+  .plan-tabs .refresh-plans { margin-left: 0; }
+  .plan-stage-head { padding: 20px 16px 14px; }
+  .entry-dialog.action-plan-dialog {
+    width: calc(100vw - 20px) !important;
+    padding: 22px 18px !important;
+  }
+  .action-plan-dialog .action-plan-context,
+  .action-plan-dialog .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .action-plan-dialog .action-plan-context > div {
+    min-height: 0;
+  }
+  .action-plan-dialog .full-field {
+    grid-column: auto;
   }
 }
 
@@ -843,6 +1099,12 @@ label input {
   }
 }
 @media (max-width: 1000px) {
+  .plan-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .plan-filters .plan-search {
+    grid-column: span 1;
+  }
   .filters {
     grid-template-columns: 1fr 1fr 1fr;
   }
@@ -851,6 +1113,15 @@ label input {
   }
 }
 @media (max-width: 760px) {
+  .plan-filters {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  .plan-filters .plan-search,
+  .plan-filters .plan-responsible {
+    grid-column: span 2;
+  }
   .statusbar {
     align-items: flex-start;
     margin-bottom: 22px;

@@ -65,6 +65,7 @@ test("semana ISO na virada do ano", () =>
   assert.deepEqual(isoWeek("2021-01-01"), { year: 2020, week: 53 }));
 test("somente perfis de correção autorizados", () => {
   assert.equal(canCorrect("operador"), false);
-  for (const role of ["supervisor", "lider", "tecnica"])
+  for (const role of ["supervisor", "lider", "tecnica", "qualidade"])
     assert.equal(canCorrect(role), true);
+  assert.equal(canCorrect("engenharia"), false);
 });

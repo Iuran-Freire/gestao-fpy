@@ -9,8 +9,8 @@ import {
 } from "@shadcn/react/message-scroller"
 import { ArrowDownIcon } from "lucide-react"
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/src/frontend/lib/utils"
+import { Button } from "@/src/frontend/components/ui/button"
 
 function MessageScrollerProvider(
   props: React.ComponentProps<typeof MessageScrollerPrimitive.Provider>

@@ -1,8 +1,8 @@
 "use client";
 import { useId, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/src/frontend/components/ui/dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/src/frontend/components/ui/select";
 import { validateEntry, type Entry, type User } from "@/src/shared/domain/fpy";
 import type { CatalogItem } from "@/src/shared/domain/catalog";
 

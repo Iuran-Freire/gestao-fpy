@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/src/frontend/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -25,7 +25,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+} from "@/src/frontend/components/ui/alert-dialog";
 import {
   Table,
   TableHeader,
@@ -33,7 +33,7 @@ import {
   TableRow,
   TableBody,
   TableCell,
-} from "@/components/ui/table";
+} from "@/src/frontend/components/ui/table";
 import { Choice } from "./entry-form";
 import { fetchJson } from "@/src/frontend/infrastructure/offline";
 import type { User } from "@/src/shared/domain/fpy";
@@ -50,6 +50,7 @@ const roles = [
   { value: "supervisor", label: "Supervisor" },
   { value: "lider", label: "Líder" },
   { value: "tecnica", label: "Técnica" },
+  { value: "qualidade", label: "Qualidade" },
   { value: "engenharia", label: "Engenharia" },
 ];
 export function UserEditor({

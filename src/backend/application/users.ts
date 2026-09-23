@@ -32,7 +32,7 @@ export function validateAccount(input: unknown) {
     throw new HttpError(400, "E-mail inválido.");
   if (
     typeof role !== "string" ||
-    !["operador", "supervisor", "lider", "tecnica", "engenharia"].includes(role)
+    !["operador", "supervisor", "lider", "tecnica", "qualidade", "engenharia"].includes(role)
   )
     throw new HttpError(400, "Perfil inválido.");
   return {

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import {
   Plus,
@@ -13,6 +13,7 @@ import {
   Database,
   BarChart3,
   ClipboardList,
+  ClipboardCheck,
   Settings,
 } from "lucide-react";
 import {
@@ -22,21 +23,21 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+} from "@/src/frontend/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/frontend/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/src/frontend/components/ui/dialog";
 import {
   Empty,
   EmptyHeader,
   EmptyTitle,
   EmptyDescription,
-} from "@/components/ui/empty";
+} from "@/src/frontend/components/ui/empty";
 import { useFpy } from "@/src/frontend/application/use-fpy";
 import {
   summarize,
@@ -51,7 +52,7 @@ import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
 import CatalogManagement from "./catalog-management";
 import AnalyticsDashboard from "./analytics-dashboard";
-import ActionPlanManagement from "./action-plan-management";
+import { ActionPlanWorkspace } from "./action-plan";
 const percent = (v: number | null) =>
   v === null
     ? "—"
@@ -62,6 +63,7 @@ const roleLabel: Record<string, string> = {
   supervisor: "Supervisor",
   lider: "Líder",
   tecnica: "Técnica",
+  qualidade: "Qualidade",
   engenharia: "Engenharia",
 };
 type InstallPrompt = Event & { prompt: () => Promise<void> };
@@ -73,13 +75,18 @@ type HistoryItem = {
   before: string;
   after: string;
 };
+const subscribeToClient = () => () => {};
+function useClientReady() {
+  return useSyncExternalStore(subscribeToClient, () => true, () => false);
+}
 export default function Dashboard() {
+  const clientReady = useClientReady();
   const app = useFpy();
   const setAppMessage = app.setMessage;
   const [loginOpen, setLoginOpen] = useState(false),
     [profileOpen, setProfileOpen] = useState(false),
     [passwordOpen, setPasswordOpen] = useState(false);
-  const [area, setArea] = useState<"fpy" | "dashboard" | "management">("fpy"),
+  const [area, setArea] = useState<"fpy" | "action-plans" | "dashboard" | "management">("fpy"),
     [tab, setTab] = useState("fpy"),
     [managementTab, setManagementTab] = useState("sync"),
     [form, setForm] = useState<{
@@ -99,10 +106,43 @@ export default function Dashboard() {
     [adminBusy, setAdminBusy] = useState(false),
     [discardId, setDiscardId] = useState<string | null>(null);
   useEffect(() => {
-    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production")
-      navigator.serviceWorker
-        .register("/sw.js")
+    let removeUpdateListener: (() => void) | undefined;
+    if ("serviceWorker" in navigator && process.env.NODE_ENV !== "production") {
+      void Promise.all([
+        navigator.serviceWorker.getRegistrations().then((registrations) =>
+          Promise.all(registrations.map((registration) => registration.unregister())),
+        ),
+        caches.keys().then((keys) =>
+          Promise.all(keys.filter((key) => key.startsWith("fpy-shell-")).map((key) => caches.delete(key))),
+        ),
+      ]).then(() => {
+        if (navigator.serviceWorker.controller && !sessionStorage.getItem("fpy-sw-cleaned")) {
+          sessionStorage.setItem("fpy-sw-cleaned", "1");
+          location.reload();
+        }
+      });
+    }
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+      let refreshing = false;
+      const reload = () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      };
+      navigator.serviceWorker.addEventListener("controllerchange", reload);
+      removeUpdateListener = () => navigator.serviceWorker.removeEventListener("controllerchange", reload);
+      void navigator.serviceWorker
+        .register("/sw.js?v=2", { updateViaCache: "none" })
         .then(async (registration) => {
+          await registration.update();
+          registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+          registration.addEventListener("updatefound", () => {
+            const worker = registration.installing;
+            worker?.addEventListener("statechange", () => {
+              if (worker.state === "installed" && navigator.serviceWorker.controller)
+                worker.postMessage({ type: "SKIP_WAITING" });
+            });
+          });
           await navigator.serviceWorker.ready;
           const assets = performance
             .getEntriesByType("resource")
@@ -122,12 +162,16 @@ export default function Dashboard() {
             "Não foi possível ativar a abertura offline. Tente recarregar.",
           ),
         );
+    }
     const prompt = (e: Event) => {
       e.preventDefault();
       setInstall(e as InstallPrompt);
     };
     window.addEventListener("beforeinstallprompt", prompt);
-    return () => window.removeEventListener("beforeinstallprompt", prompt);
+    return () => {
+      removeUpdateListener?.();
+      window.removeEventListener("beforeinstallprompt", prompt);
+    };
   }, [setAppMessage]);
   const entries = app.entries.filter(
     (e) =>
@@ -298,6 +342,7 @@ export default function Dashboard() {
       </Empty>
     );
   }
+  if (!clientReady) return null;
   return (
     <main className="workspace">
       <header className="topbar">
@@ -321,6 +366,15 @@ export default function Dashboard() {
             }}
           >
             <ClipboardList size={19} /> <span>FPY</span>
+          </button>
+          <button
+            className={area === "action-plans" ? "active" : ""}
+            onClick={() => {
+              setArea("action-plans");
+              setTab("action-plans");
+            }}
+          >
+            <ClipboardCheck size={19} /> <span>Plano de Ação</span>
           </button>
           <button
             className={area === "dashboard" ? "active" : ""}
@@ -403,6 +457,8 @@ export default function Dashboard() {
             <h1>
               {area === "fpy"
                 ? "Registros de FPY"
+                : area === "action-plans"
+                  ? "Plano de Ação"
                 : area === "dashboard"
                   ? "Indicadores da operação"
                   : "Gestão do sistema"}
@@ -410,6 +466,8 @@ export default function Dashboard() {
             <p>
               {area === "fpy"
                 ? "Consulte e registre produção e defeitos por turno."
+                : area === "action-plans"
+                  ? "Acompanhe a evidência da Qualidade e as ações da Engenharia."
                 : area === "dashboard"
                   ? "Acompanhe produção, defeitos e rendimento em uma visão consolidada."
                   : "Controle a sincronização, os usuários e a segurança dos dados."}
@@ -481,14 +539,13 @@ export default function Dashboard() {
             setLimit(100);
           }}
         >
-          {area !== "dashboard" && <TabsList className="main-tabs">
+          {(area === "fpy" || area === "management") && <TabsList className="main-tabs">
             {area === "fpy" && <>
               <TabsTrigger value="fpy">Tabela de FPY</TabsTrigger>
               <TabsTrigger value="defects">Defeitos</TabsTrigger>
               <TabsTrigger value="production">Produção</TabsTrigger>
             </>}
             {area === "management" && <>
-              <TabsTrigger value="plans" onClick={() => setManagementTab("plans")}>PQC / Planos de ação</TabsTrigger>
               {app.local && (app.local.user.owner === 1 || canCorrect(app.local.user.role)) && <TabsTrigger value="catalog" onClick={() => setManagementTab("catalog")}>Cadastros</TabsTrigger>}
               <TabsTrigger value="sync" onClick={() => setManagementTab("sync")}>Sincronização</TabsTrigger>
               {app.local && (app.local.user.owner === 1 || ["supervisor", "lider", "tecnica"].includes(app.local.user.role)) && (
@@ -560,9 +617,7 @@ export default function Dashboard() {
                 />
               </label>
               <label className="search-field">
-                {area === "fpy" && tab === "defects"
-                  ? "PN, modelo, código ou posição"
-                  : "PN ou modelo"}
+                {tab === "defects" ? "PN, modelo, código ou posição" : "PN ou modelo"}
                 <input
                   placeholder="Pesquisar…"
                   value={search}
@@ -706,6 +761,18 @@ export default function Dashboard() {
               {recordTable("production")}
             </section>
           </TabsContent>
+          <TabsContent value="action-plans" hidden={area !== "action-plans"}>
+            {app.local && <ActionPlanWorkspace
+              entries={app.entries}
+              user={app.local.user}
+              year={app.year}
+              online={app.online}
+              onYearChange={(value) => {
+                app.setYear(value);
+                setTimeout(() => app.sync(), 0);
+              }}
+            />}
+          </TabsContent>
           <TabsContent value="sync" hidden={area !== "management"}>
             <section className="panel sync-panel">
               <div className="panel-head">
@@ -770,9 +837,6 @@ export default function Dashboard() {
           </TabsContent>
           <TabsContent value="catalog" hidden={area !== "management"}>
             {app.local && (app.local.user.owner === 1 || canCorrect(app.local.user.role)) && <CatalogManagement items={app.local.catalog} online={app.online} onUpdated={app.sync} />}
-          </TabsContent>
-          <TabsContent value="plans" hidden={area !== "management"}>
-            {app.local && <ActionPlanManagement user={app.local.user} catalog={app.local.catalog} online={app.online} />}
           </TabsContent>
           <TabsContent value="admin" hidden={area !== "management"}>
             {app.local && (

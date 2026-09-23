@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { CatalogItem } from "@/src/shared/domain/catalog";
 import { fetchJson } from "@/src/frontend/infrastructure/offline";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/src/frontend/components/ui/dialog";
 
 export default function CatalogManagement({ items, online, onUpdated }: {
   items?: CatalogItem[]; online: boolean; onUpdated: () => Promise<void>;
