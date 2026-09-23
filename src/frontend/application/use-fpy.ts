@@ -26,15 +26,19 @@ export function useFpy() {
     [online, setOnline] = useState(() =>
       typeof navigator === "undefined" ? true : navigator.onLine,
     ),
-    [year, setYear] = useState(String(new Date().getFullYear()));
+    [year, setYearState] = useState(String(new Date().getFullYear()));
   const activeYear = useRef(year);
-  useEffect(() => {
-    activeYear.current = year;
-  }, [year]);
+  const requestedYears = useRef<string[]>([]);
+  const setYear = useCallback((value: string) => {
+    activeYear.current = value;
+    setYearState(value);
+  }, []);
   const reload = useCallback(async () => {
     setLocal(await readLocal());
   }, []);
-  const sync = useCallback(async () => {
+  const syncYears = useCallback(async (extraYears?: string[]) => {
+    if (extraYears) requestedYears.current = extraYears;
+    if (!navigator.onLine) return;
     setBusy(true);
     try {
       await locked(async () => {
@@ -88,7 +92,7 @@ export function useFpy() {
         }
         s.catalog = await fetchJson<CatalogItem[]>("/api/catalog");
         await writeLocal(s);
-        const years = new Set([activeYear.current, ...Object.keys(s.years)]);
+        const years = new Set([activeYear.current, ...requestedYears.current, ...Object.keys(s.years)]);
         for (const y of years) {
           const records = await loadYear(y);
           s.years[y] = { records, at: new Date().toISOString() };
@@ -109,6 +113,7 @@ export function useFpy() {
       setReady(true);
     }
   }, [reload]);
+  const sync = useCallback(() => syncYears(), [syncYears]);
   useEffect(() => {
     readLocal()
       .then((s) => {
@@ -212,6 +217,7 @@ export function useFpy() {
     year,
     setYear,
     sync,
+    syncYears,
     save,
     discard,
     logout,

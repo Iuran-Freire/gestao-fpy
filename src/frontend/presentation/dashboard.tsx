@@ -45,9 +45,11 @@ import {
   canCorrect,
   type Entry,
 } from "@/src/shared/domain/fpy";
-import { fetchJson } from "@/src/frontend/infrastructure/offline";
+import { fetchJson, visibleEntries } from "@/src/frontend/infrastructure/offline";
 import { createCsvExport, downloadCsv } from "@/src/frontend/application/csv";
-import { Choice, EntryForm } from "./entry-form";
+import { filterFpyEntries, localDate, periodRange, periodYears, type FpyPeriod } from "@/src/frontend/application/fpy-filters";
+import { FpyFilters } from "./fpy-filters";
+import { EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
 import CatalogManagement from "./catalog-management";
@@ -96,9 +98,8 @@ export default function Dashboard() {
     [search, setSearch] = useState(""),
     [shift, setShift] = useState("all"),
     [line, setLine] = useState("all"),
-    [week, setWeek] = useState(""),
-    [from, setFrom] = useState(""),
-    [to, setTo] = useState(""),
+    [period, setPeriod] = useState<FpyPeriod>(`year:${app.year}`),
+    [customRange, setCustomRange] = useState({ from: "", to: "" }),
     [limit, setLimit] = useState(100),
     [history, setHistory] = useState<HistoryItem[] | null>(null),
     [install, setInstall] = useState<InstallPrompt | null>(null),
@@ -173,33 +174,45 @@ export default function Dashboard() {
       window.removeEventListener("beforeinstallprompt", prompt);
     };
   }, [setAppMessage]);
-  const entries = app.entries.filter(
-    (e) =>
-      (!search ||
-        `${e.pn} ${e.model} ${e.code} ${e.position}`
-          .toLowerCase()
-          .includes(search.toLowerCase())) &&
-      (shift === "all" || e.shift === shift) &&
-      (line === "all" || e.line === line) &&
-      (!week || isoWeek(e.date).week === Number(week)) &&
-      (!from || e.date >= from) &&
-      (!to || e.date <= to),
-  );
+  const today = localDate(new Date());
+  const range = periodRange(period, customRange, today);
+  const selectedYears = periodYears(range);
+  const missingYears = selectedYears.filter((year) => !app.local?.years[year]);
+  const rangeError = !selectedYears.length
+    ? "Informe um período válido, com a data inicial antes da final (até 12 anos)."
+    : "";
+  const periodEntries = missingYears.length ? [] : selectedYears.flatMap((year) => app.local ? visibleEntries(app.local, year) : []);
+  const lines = [...new Set(periodEntries.filter((entry) => entry.date >= range.from && entry.date <= range.to).map((entry) => entry.line))].sort();
+  const selectedLine = lines.includes(line) ? line : "all";
+  const filters = { ...range, shift, line: selectedLine, search };
+  const entries = filterFpyEntries(periodEntries, filters, tab === "defects");
   // FPY uses context filters only: code/position searching must never remove some defects from its denominator.
-  const contexts = app.entries.filter(
-    (e) =>
-      (!search ||
-        `${e.pn} ${e.model}`.toLowerCase().includes(search.toLowerCase())) &&
-      (shift === "all" || e.shift === shift) &&
-      (line === "all" || e.line === line) &&
-      (!week || isoWeek(e.date).week === Number(week)) &&
-      (!from || e.date >= from) &&
-      (!to || e.date <= to),
-  );
+  const contexts = filterFpyEntries(periodEntries, filters, false);
   const groups = summarize(contexts),
     pendingIds = new Set(app.local?.pending.map((p) => p.mutation.entry.id));
-  const lines = [...new Set(app.entries.map((e) => e.line))].sort(),
-    canEdit = app.local && canCorrect(app.local.user.role);
+  const canEdit = app.local && canCorrect(app.local.user.role);
+  const availableYears = [...new Set([
+    ...Array.from({ length: 12 }, (_, i) => String(new Date().getFullYear() - i)),
+    ...Object.keys(app.local?.years || {}),
+    ...(period.startsWith("year:") ? [period.slice(5)] : []),
+  ])].sort().reverse();
+  function changePeriod(nextPeriod: FpyPeriod, nextRange = customRange) {
+    if (nextPeriod === "custom" && period !== "custom") nextRange = range;
+    setPeriod(nextPeriod);
+    setCustomRange(nextRange);
+    setLine("all");
+    setLimit(100);
+    const years = periodYears(periodRange(nextPeriod, nextRange, today));
+    if (years.length) {
+      app.setYear(years[years.length - 1]);
+      void app.syncYears(years);
+    }
+  }
+  function changeTab(value: string) {
+    if (tab === "defects" && value !== "defects") setSearch("");
+    setTab(value);
+    setLimit(100);
+  }
   async function showHistory(e: Entry) {
     try {
       setHistory((await fetchJson("/api/history?id=" + e.id)) as HistoryItem[]);
@@ -223,13 +236,13 @@ export default function Dashboard() {
     .forEach((e) => codes.set(e.code, (codes.get(e.code) || 0) + e.quantity));
   const pareto = [...codes].sort((a, b) => b[1] - a[1]).slice(0, 5);
   function exportSelectedTable() {
-    if (!["fpy", "defects", "production"].includes(tab)) return;
+    if (!["fpy", "defects", "production"].includes(tab) || missingYears.length || rangeError) return;
     const result = createCsvExport(
       tab as "fpy" | "defects" | "production",
       entries,
       groups,
       pendingIds,
-      app.year,
+      period.startsWith("year:") ? period.slice(5) : `${range.from}_${range.to}`,
     );
     downloadCsv(result.filename, result.content);
   }
@@ -362,7 +375,7 @@ export default function Dashboard() {
             className={area === "fpy" ? "active" : ""}
             onClick={() => {
               setArea("fpy");
-              if (!["fpy", "defects", "production"].includes(tab)) setTab("fpy");
+              if (!["fpy", "defects", "production"].includes(tab)) changeTab("fpy");
             }}
           >
             <ClipboardList size={19} /> <span>FPY</span>
@@ -371,7 +384,7 @@ export default function Dashboard() {
             className={area === "action-plans" ? "active" : ""}
             onClick={() => {
               setArea("action-plans");
-              setTab("action-plans");
+              changeTab("action-plans");
             }}
           >
             <ClipboardCheck size={19} /> <span>Plano de Ação</span>
@@ -386,7 +399,7 @@ export default function Dashboard() {
             className={area === "management" ? "active" : ""}
             onClick={() => {
               setArea("management");
-              setTab(managementTab);
+              changeTab(managementTab);
             }}
           >
             <Settings size={19} /> <span>Gestão</span>
@@ -526,18 +539,14 @@ export default function Dashboard() {
             </button>
           </div>
         )}
-        {app.local && !app.local.years[app.year] && (
+        {app.local && (area === "fpy" ? missingYears.length > 0 : !app.local.years[app.year]) && (
           <div className="notice">
-            O ano {app.year} ainda não foi baixado neste dispositivo. Conecte-se
-            e sincronize para consultar o histórico completo.
+            {app.busy ? "Carregando os dados do período…" : `O histórico de ${area === "fpy" ? missingYears.join(", ") : app.year} ainda não está disponível neste dispositivo. Conecte-se e sincronize para consultar o período completo.`}
           </div>
         )}
         <Tabs
           value={tab}
-          onValueChange={(v) => {
-            setTab(v);
-            setLimit(100);
-          }}
+          onValueChange={changeTab}
         >
           {(area === "fpy" || area === "management") && <TabsList className="main-tabs">
             {area === "fpy" && <>
@@ -554,97 +563,30 @@ export default function Dashboard() {
             </>}
           </TabsList>}
           {area === "fpy" && (
-            <div className="filters panel">
-              <Choice
-                label="Ano"
-                value={app.year}
-                onChange={(v) => {
-                  app.setYear(v);
-                  setFrom("");
-                  setTo("");
-                  setTimeout(() => app.sync(), 0);
-                }}
-                items={Array.from({ length: 12 }, (_, i) =>
-                  String(new Date().getFullYear() - i),
-                ).map((v) => ({ value: v, label: v }))}
-              />
-              <label>
-                Semana ISO
-                <input
-                  type="number"
-                  min="1"
-                  max="53"
-                  placeholder="Todas"
-                  value={week}
-                  onChange={(e) => setWeek(e.target.value)}
-                />
-              </label>
-              <Choice
-                label="Turno"
-                value={shift}
-                onChange={setShift}
-                items={[
-                  { value: "all", label: "Todos" },
-                  ...["1", "2", "3"].map((v) => ({
-                    value: v,
-                    label: v + "º turno",
-                  })),
-                ]}
-              />
-              <Choice
-                label="Linha"
-                value={line}
-                onChange={setLine}
-                items={[
-                  { value: "all", label: "Todas" },
-                  ...lines.map((v) => ({ value: v, label: v })),
-                ]}
-              />
-              <label>
-                De
-                <input
-                  type="date"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                />
-              </label>
-              <label>
-                Até
-                <input
-                  type="date"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                />
-              </label>
-              <label className="search-field">
-                {tab === "defects" ? "PN, modelo, código ou posição" : "PN ou modelo"}
-                <input
-                  placeholder="Pesquisar…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </label>
-              <button
-                className="text-button"
-                onClick={() => {
-                  setSearch("");
-                  setShift("all");
-                  setLine("all");
-                  setWeek("");
-                  setFrom("");
-                  setTo("");
-                }}
-              >
-                Limpar filtros
-              </button>
-              {area === "fpy" && <button
-                className="secondary export-button"
-                onClick={exportSelectedTable}
-                disabled={!app.local}
-              >
-                <Download size={17} /> Exportar CSV
-              </button>}
-            </div>
+            <FpyFilters
+              period={period}
+              years={availableYears}
+              range={range}
+              shift={shift}
+              line={selectedLine}
+              lines={lines}
+              search={search}
+              defects={tab === "defects"}
+              count={tab === "fpy" ? groups.length : entries.filter((entry) => entry.kind === (tab === "defects" ? "defect" : "production")).length}
+              unavailable={!app.local || missingYears.length > 0}
+              error={rangeError}
+              onPeriod={changePeriod}
+              onRange={(value) => changePeriod("custom", value)}
+              onShift={(value) => { setShift(value); setLimit(100); }}
+              onLine={(value) => { setLine(value); setLimit(100); }}
+              onSearch={(value) => { setSearch(value); setLimit(100); }}
+              onReset={() => {
+                setSearch("");
+                setShift("all");
+                changePeriod(`year:${today.slice(0, 4)}`);
+              }}
+              onExport={exportSelectedTable}
+            />
           )}
           {area === "dashboard" && (
             <AnalyticsDashboard
@@ -652,7 +594,7 @@ export default function Dashboard() {
               year={app.year}
               onYearChange={(value) => {
                 app.setYear(value);
-                setTimeout(() => app.sync(), 0);
+                void app.sync();
               }}
             />
           )}
@@ -661,7 +603,7 @@ export default function Dashboard() {
               <div className="panel-head">
                 <h2>Rendimento por turno</h2>
                 <span>
-                  {groups.length} combinações · {app.year}
+                  {groups.length} combinações
                 </span>
               </div>
               <Table>
@@ -712,8 +654,8 @@ export default function Dashboard() {
               </Table>
               {!groups.length &&
                 empty(
-                  "Pronto para o primeiro lançamento",
-                  "Informe produção e registre defeitos para acompanhar o FPY.",
+                  missingYears.length && app.local ? "Histórico indisponível" : "Nenhum resultado para estes filtros",
+                  missingYears.length && app.local ? "Sincronize para consultar o período completo." : "Ajuste o período, turno, linha ou busca para consultar seus lançamentos.",
                 )}
               {groups.length > limit && (
                 <button
@@ -769,7 +711,7 @@ export default function Dashboard() {
               online={app.online}
               onYearChange={(value) => {
                 app.setYear(value);
-                setTimeout(() => app.sync(), 0);
+                void app.sync();
               }}
             />}
           </TabsContent>

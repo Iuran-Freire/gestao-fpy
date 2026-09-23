@@ -827,20 +827,70 @@ label input {
   color: #b84f00 !important;
   box-shadow: inset 0 -3px #e97620 !important;
 }
-.filters {
-  display: grid;
-  grid-template-columns: 90px 90px 120px 140px 1fr 1fr;
-  gap: 14px;
+.fpy-filters {
   padding: 20px;
   margin-bottom: 20px;
+}
+.fpy-filter-fields {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(145px, .7fr) minmax(145px, .7fr) minmax(240px, 1.6fr);
+  gap: 16px;
   align-items: end;
-  overflow: visible;
 }
-.filters .search-field {
-  grid-column: span 4;
-}
-.filters label {
+.fpy-filters label {
+  min-width: 0;
   color: #566270;
+}
+.fpy-filters select {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 7px;
+  padding: 10px 12px;
+  border: 1px solid #ccd4dd;
+  border-radius: 6px;
+  background: white;
+  color: #293544;
+  font-size: 16px;
+  font-weight: 400;
+}
+.fpy-filters select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.fpy-search-input { display: block; position: relative; margin-top: 7px; }
+.fpy-search-input svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #7b8794; }
+.fpy-search-input input { padding-left: 38px; margin-top: 0; }
+.fpy-custom-period {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 240px));
+  gap: 16px;
+  padding-top: 16px;
+}
+.fpy-filter-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #edf0f3;
+}
+.fpy-filter-footer p { margin: 0; font-size: 13px; color: #65717f; }
+.fpy-filter-actions { display: flex; gap: 12px; flex-shrink: 0; }
+.fpy-filter-actions button { min-height: 40px; padding: 8px 12px; }
+.fpy-filter-actions button:disabled { cursor: default; }
+@media (max-width: 1050px) {
+  .fpy-filter-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fpy-search { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .fpy-filters { padding: 16px; }
+  .fpy-filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .fpy-period { grid-column: 1 / -1; }
+  .fpy-filter-footer { flex-direction: column; align-items: stretch; }
+  .fpy-filter-actions { justify-content: space-between; gap: 8px; }
+  .fpy-custom-period { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }
 .choice {
   width: 100% !important;
@@ -1105,12 +1155,6 @@ label input {
   .plan-filters .plan-search {
     grid-column: span 1;
   }
-  .filters {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .filters .search-field {
-    grid-column: span 2;
-  }
 }
 @media (max-width: 760px) {
   .plan-filters {
@@ -1145,14 +1189,6 @@ label input {
   .account > span {
     max-width: 100px;
     overflow-wrap: anywhere;
-  }
-  .filters {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding: 16px;
-  }
-  .filters .search-field {
-    grid-column: span 2;
   }
   .form-grid {
     grid-template-columns: 1fr 1fr;
