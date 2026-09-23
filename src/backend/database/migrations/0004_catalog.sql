@@ -8,15 +8,10 @@ CREATE TABLE catalog (
 CREATE UNIQUE INDEX catalog_product_pn ON catalog(code COLLATE NOCASE) WHERE kind='product';--> statement-breakpoint
 CREATE UNIQUE INDEX catalog_defect_code ON catalog(code COLLATE NOCASE,station COLLATE NOCASE,sector COLLATE NOCASE) WHERE kind='defect';--> statement-breakpoint
 CREATE TABLE catalog_audit(id INTEGER PRIMARY KEY AUTOINCREMENT, item_id TEXT NOT NULL, actor TEXT NOT NULL, before TEXT, after TEXT NOT NULL, at TEXT NOT NULL);--> statement-breakpoint
-CREATE TRIGGER catalog_insert_audit AFTER INSERT ON catalog BEGIN
- INSERT INTO catalog_audit(item_id,actor,before,after,at) VALUES(NEW.id,NEW.changed_by,NULL,
- json_object('kind',NEW.kind,'code',NEW.code,'label',NEW.label,'internal',NEW.internal,'classCc',NEW.class_cc,'station',NEW.station,'sector',NEW.sector,'active',NEW.active,'revision',NEW.revision),NEW.updated_at);
-END;--> statement-breakpoint
-CREATE TRIGGER catalog_update_audit AFTER UPDATE ON catalog BEGIN
- INSERT INTO catalog_audit(item_id,actor,before,after,at) VALUES(NEW.id,NEW.changed_by,
- json_object('kind',OLD.kind,'code',OLD.code,'label',OLD.label,'internal',OLD.internal,'classCc',OLD.class_cc,'station',OLD.station,'sector',OLD.sector,'active',OLD.active,'revision',OLD.revision),
- json_object('kind',NEW.kind,'code',NEW.code,'label',NEW.label,'internal',NEW.internal,'classCc',NEW.class_cc,'station',NEW.station,'sector',NEW.sector,'active',NEW.active,'revision',NEW.revision),NEW.updated_at);
-END;--> statement-breakpoint
+CREATE TRIGGER catalog_insert_audit AFTER INSERT ON catalog BEGIN INSERT INTO catalog_audit(item_id,actor,before,after,at) VALUES(NEW.id,NEW.changed_by,NULL,json_object('kind',NEW.kind,'code',NEW.code,'label',NEW.label,'internal',NEW.internal,'classCc',NEW.class_cc,'station',NEW.station,'sector',NEW.sector,'active',NEW.active,'revision',NEW.revision),NEW.updated_at); END;
+--> statement-breakpoint
+CREATE TRIGGER catalog_update_audit AFTER UPDATE ON catalog BEGIN INSERT INTO catalog_audit(item_id,actor,before,after,at) VALUES(NEW.id,NEW.changed_by,json_object('kind',OLD.kind,'code',OLD.code,'label',OLD.label,'internal',OLD.internal,'classCc',OLD.class_cc,'station',OLD.station,'sector',OLD.sector,'active',OLD.active,'revision',OLD.revision),json_object('kind',NEW.kind,'code',NEW.code,'label',NEW.label,'internal',NEW.internal,'classCc',NEW.class_cc,'station',NEW.station,'sector',NEW.sector,'active',NEW.active,'revision',NEW.revision),NEW.updated_at); END;
+--> statement-breakpoint
 ALTER TABLE records ADD class_cc TEXT NOT NULL DEFAULT '';--> statement-breakpoint
 INSERT INTO catalog(id,kind,code,label,internal,class_cc,station,sector,changed_by,updated_at) VALUES('seed-product-0000','product','B09051U','A06 SOC 30%','BATERIA','BATERIA','','','importacao-excel','2026-09-17T00:00:00Z');--> statement-breakpoint
 INSERT INTO catalog(id,kind,code,label,internal,class_cc,station,sector,changed_by,updated_at) VALUES('seed-product-0001','product','B09061U','A06 SOC 30%','BATERIA','BATERIA','','','importacao-excel','2026-09-17T00:00:00Z');--> statement-breakpoint
@@ -1481,4 +1476,5 @@ INSERT INTO catalog(id,kind,code,label,internal,class_cc,station,sector,changed_
 INSERT INTO catalog(id,kind,code,label,internal,class_cc,station,sector,changed_by,updated_at) VALUES('seed-defect-1209','defect','TPLRF18','BOX CONTAMINADA','','','Embalagem','TP LINK','importacao-excel','2026-09-17T00:00:00Z');--> statement-breakpoint
 
 DROP TRIGGER records_audit;--> statement-breakpoint
-CREATE TRIGGER records_audit AFTER UPDATE ON records BEGIN INSERT INTO audit(record_id,before,after,actor,reason,at) VALUES (OLD.id,json_object('date',OLD.date,'shift',OLD.shift,'line',OLD.line,'pn',OLD.pn,'model',OLD.model,'quantity',OLD.quantity,'code',OLD.code,'description',OLD.description,'position',OLD.position,'station',OLD.station,'category',OLD.category,'classCc',OLD.class_cc,'revision',OLD.revision),json_object('date',NEW.date,'shift',NEW.shift,'line',NEW.line,'pn',NEW.pn,'model',NEW.model,'quantity',NEW.quantity,'code',NEW.code,'description',NEW.description,'position',NEW.position,'station',NEW.station,'category',NEW.category,'classCc',NEW.class_cc,'revision',NEW.revision),NEW.changed_by,NEW.reason,NEW.updated_at); END;--> statement-breakpoint
+CREATE TRIGGER records_audit AFTER UPDATE ON records BEGIN INSERT INTO audit(record_id,before,after,actor,reason,at) VALUES (OLD.id,json_object('date',OLD.date,'shift',OLD.shift,'line',OLD.line,'pn',OLD.pn,'model',OLD.model,'quantity',OLD.quantity,'code',OLD.code,'description',OLD.description,'position',OLD.position,'station',OLD.station,'category',OLD.category,'classCc',OLD.class_cc,'revision',OLD.revision),json_object('date',NEW.date,'shift',NEW.shift,'line',NEW.line,'pn',NEW.pn,'model',NEW.model,'quantity',NEW.quantity,'code',NEW.code,'description',NEW.description,'position',NEW.position,'station',NEW.station,'category',NEW.category,'classCc',NEW.class_cc,'revision',NEW.revision),NEW.changed_by,NEW.reason,NEW.updated_at); END;
+--> statement-breakpoint
