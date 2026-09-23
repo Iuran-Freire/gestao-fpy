@@ -833,7 +833,7 @@ label input {
 }
 .fpy-filter-fields {
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) minmax(145px, .7fr) minmax(145px, .7fr) minmax(240px, 1.6fr);
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(100px, .6fr) minmax(120px, .7fr) minmax(220px, 1.5fr);
   gap: 16px;
   align-items: end;
 }
@@ -861,12 +861,6 @@ label input {
 .fpy-search-input { display: block; position: relative; margin-top: 7px; }
 .fpy-search-input svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #7b8794; }
 .fpy-search-input input { padding-left: 38px; margin-top: 0; }
-.fpy-custom-period {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 240px));
-  gap: 16px;
-  padding-top: 16px;
-}
 .fpy-filter-footer {
   display: flex;
   align-items: center;
@@ -881,16 +875,14 @@ label input {
 .fpy-filter-actions button { min-height: 40px; padding: 8px 12px; }
 .fpy-filter-actions button:disabled { cursor: default; }
 @media (max-width: 1050px) {
-  .fpy-filter-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fpy-filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fpy-search { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   .fpy-filters { padding: 16px; }
   .fpy-filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .fpy-period { grid-column: 1 / -1; }
   .fpy-filter-footer { flex-direction: column; align-items: stretch; }
   .fpy-filter-actions { justify-content: space-between; gap: 8px; }
-  .fpy-custom-period { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }
 .choice {
   width: 100% !important;

@@ -47,7 +47,7 @@ import {
 } from "@/src/shared/domain/fpy";
 import { fetchJson, visibleEntries } from "@/src/frontend/infrastructure/offline";
 import { createCsvExport, downloadCsv } from "@/src/frontend/application/csv";
-import { filterFpyEntries, localDate, periodRange, periodYears, type FpyPeriod } from "@/src/frontend/application/fpy-filters";
+import { filterFpyEntries, periodYears } from "@/src/frontend/application/fpy-filters";
 import { FpyFilters } from "./fpy-filters";
 import { EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
@@ -98,8 +98,7 @@ export default function Dashboard() {
     [search, setSearch] = useState(""),
     [shift, setShift] = useState("all"),
     [line, setLine] = useState("all"),
-    [period, setPeriod] = useState<FpyPeriod>(`year:${app.year}`),
-    [customRange, setCustomRange] = useState({ from: "", to: "" }),
+    [range, setRange] = useState({ from: `${app.year}-01-01`, to: `${app.year}-12-31` }),
     [limit, setLimit] = useState(100),
     [history, setHistory] = useState<HistoryItem[] | null>(null),
     [install, setInstall] = useState<InstallPrompt | null>(null),
@@ -174,8 +173,6 @@ export default function Dashboard() {
       window.removeEventListener("beforeinstallprompt", prompt);
     };
   }, [setAppMessage]);
-  const today = localDate(new Date());
-  const range = periodRange(period, customRange, today);
   const selectedYears = periodYears(range);
   const missingYears = selectedYears.filter((year) => !app.local?.years[year]);
   const rangeError = !selectedYears.length
@@ -191,18 +188,11 @@ export default function Dashboard() {
   const groups = summarize(contexts),
     pendingIds = new Set(app.local?.pending.map((p) => p.mutation.entry.id));
   const canEdit = app.local && canCorrect(app.local.user.role);
-  const availableYears = [...new Set([
-    ...Array.from({ length: 12 }, (_, i) => String(new Date().getFullYear() - i)),
-    ...Object.keys(app.local?.years || {}),
-    ...(period.startsWith("year:") ? [period.slice(5)] : []),
-  ])].sort().reverse();
-  function changePeriod(nextPeriod: FpyPeriod, nextRange = customRange) {
-    if (nextPeriod === "custom" && period !== "custom") nextRange = range;
-    setPeriod(nextPeriod);
-    setCustomRange(nextRange);
+  function changeRange(nextRange: { from: string; to: string }) {
+    setRange(nextRange);
     setLine("all");
     setLimit(100);
-    const years = periodYears(periodRange(nextPeriod, nextRange, today));
+    const years = periodYears(nextRange);
     if (years.length) {
       app.setYear(years[years.length - 1]);
       void app.syncYears(years);
@@ -242,7 +232,7 @@ export default function Dashboard() {
       entries,
       groups,
       pendingIds,
-      period.startsWith("year:") ? period.slice(5) : `${range.from}_${range.to}`,
+      `${range.from}_${range.to}`,
     );
     downloadCsv(result.filename, result.content);
   }
@@ -564,8 +554,6 @@ export default function Dashboard() {
           </TabsList>}
           {area === "fpy" && (
             <FpyFilters
-              period={period}
-              years={availableYears}
               range={range}
               shift={shift}
               line={selectedLine}
@@ -575,15 +563,15 @@ export default function Dashboard() {
               count={tab === "fpy" ? groups.length : entries.filter((entry) => entry.kind === (tab === "defects" ? "defect" : "production")).length}
               unavailable={!app.local || missingYears.length > 0}
               error={rangeError}
-              onPeriod={changePeriod}
-              onRange={(value) => changePeriod("custom", value)}
+              onRange={changeRange}
               onShift={(value) => { setShift(value); setLimit(100); }}
               onLine={(value) => { setLine(value); setLimit(100); }}
               onSearch={(value) => { setSearch(value); setLimit(100); }}
               onReset={() => {
                 setSearch("");
                 setShift("all");
-                changePeriod(`year:${today.slice(0, 4)}`);
+                const year = new Date().getFullYear();
+                changeRange({ from: `${year}-01-01`, to: `${year}-12-31` });
               }}
               onExport={exportSelectedTable}
             />
