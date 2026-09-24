@@ -15,6 +15,8 @@ import {
   ClipboardList,
   ClipboardCheck,
   Settings,
+  LogOut,
+  UserRound,
 } from "lucide-react";
 import {
   Table,
@@ -52,6 +54,7 @@ import { FpyFilters } from "./fpy-filters";
 import { EntryForm } from "./entry-form";
 import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
 import Login from "./login";
+import { Profile } from "./profile";
 import CatalogManagement from "./catalog-management";
 import AnalyticsDashboard from "./analytics-dashboard";
 import { ActionPlanWorkspace } from "./action-plan";
@@ -87,6 +90,7 @@ export default function Dashboard() {
   const setAppMessage = app.setMessage;
   const [loginOpen, setLoginOpen] = useState(false),
     [profileOpen, setProfileOpen] = useState(false),
+    [profileEditOpen, setProfileEditOpen] = useState(false),
     [passwordOpen, setPasswordOpen] = useState(false);
   const [area, setArea] = useState<"fpy" | "action-plans" | "dashboard" | "management">("fpy"),
     [tab, setTab] = useState("fpy"),
@@ -346,6 +350,16 @@ export default function Dashboard() {
     );
   }
   if (!clientReady) return null;
+  if (!app.local || app.authRequired) {
+    return (
+      <Login
+        loading={!app.ready}
+        online={app.online}
+        onClose={() => setLoginOpen(false)}
+        onSuccess={() => void app.sync()}
+      />
+    );
+  }
   return (
     <main className="workspace">
       <header className="topbar">
@@ -425,18 +439,11 @@ export default function Dashboard() {
                   </small>
                 </span>
                 <div className="user-toolbar">
-                  <button
-                    className="secondary"
-                    disabled={!app.online}
-                    onClick={() => setProfileOpen(true)}
-                  >
-                    Meu perfil
+                  <button className="secondary" onClick={() => setProfileOpen(true)}>
+                    <UserRound size={16} aria-hidden="true" /> Ver perfil
                   </button>
-                  <button
-                    className="secondary"
-                    onClick={() => setLoginOpen(true)}
-                  >
-                    Trocar conta
+                  <button className="secondary" onClick={() => void app.logout()} disabled={!app.online}>
+                    <LogOut size={16} aria-hidden="true" /> Sair
                   </button>
                 </div>
               </>
@@ -509,23 +516,6 @@ export default function Dashboard() {
               aria-label="Dispensar mensagem"
             >
               ×
-            </button>
-          </div>
-        )}
-        {!app.local && (
-          <div className="login-banner">
-            <div>
-              <b>
-                {app.ready
-                  ? "Entre para acessar a operação"
-                  : "Carregando sua sessão…"}
-              </b>
-              <p>
-                Use sua conta individual para consultar e registrar os dados.
-              </p>
-            </div>
-            <button onClick={() => setLoginOpen(true)}>
-              Entrar com usuário e senha
             </button>
           </div>
         )}
@@ -829,16 +819,37 @@ export default function Dashboard() {
         <Login
           onClose={() => setLoginOpen(false)}
           onSuccess={() => void app.sync()}
+          dismissible
+          online={app.online}
         />
       )}
       {profileOpen && app.local && (
+        <Profile
+          user={app.local.user}
+          online={app.online}
+          onClose={() => setProfileOpen(false)}
+          onEdit={() => {
+            setProfileOpen(false);
+            setProfileEditOpen(true);
+          }}
+          onPassword={() => {
+            setProfileOpen(false);
+            setPasswordOpen(true);
+          }}
+          onLogout={() => {
+            setProfileOpen(false);
+            void app.logout();
+          }}
+        />
+      )}
+      {profileEditOpen && app.local && (
         <UserEditor
           actor={app.local.user}
           target={app.local.user}
-          onClose={() => setProfileOpen(false)}
+          onClose={() => setProfileEditOpen(false)}
           onSaved={() => void app.sync()}
           onPassword={() => {
-            setProfileOpen(false);
+            setProfileEditOpen(false);
             setPasswordOpen(true);
           }}
         />

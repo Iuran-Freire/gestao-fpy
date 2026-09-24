@@ -22,6 +22,7 @@ export function useFpy() {
   const [local, setLocal] = useState<LocalState | null>(null),
     [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false),
+    [authRequired, setAuthRequired] = useState(false),
     [message, setMessage] = useState(""),
     [online, setOnline] = useState(() =>
       typeof navigator === "undefined" ? true : navigator.onLine,
@@ -44,6 +45,7 @@ export function useFpy() {
       await locked(async () => {
         let s = await readLocal();
         const user = await fetchJson<User>("/api/session");
+        setAuthRequired(false);
         if (s && s.user.id !== user.id) {
           if (s.pending.length)
             throw Error(
@@ -106,6 +108,8 @@ export function useFpy() {
         );
       });
     } catch (e) {
+      if ((e as Error & { status?: number }).status === 401)
+        setAuthRequired(true);
       setMessage((e as Error).message);
       await reload();
     } finally {
@@ -202,6 +206,7 @@ export function useFpy() {
         await fetchJson("/api/auth/logout", { method: "POST" });
         await writeLocal(null);
         setLocal(null);
+        setAuthRequired(false);
       });
     } catch (e) {
       setMessage((e as Error).message);
@@ -209,6 +214,7 @@ export function useFpy() {
   }
   return {
     local,
+    authRequired,
     ready,
     busy,
     message,
