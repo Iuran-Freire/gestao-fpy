@@ -412,49 +412,11 @@ label input {
 .action-plan-workspace {
   overflow: hidden;
 }
-.plan-tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 18px;
-  overflow-x: auto;
-  border-bottom: 1px solid #e1e6eb;
-  background: #fafbfc;
-}
-.plan-tabs > button {
-  min-width: max-content;
-  min-height: 58px;
-  padding: 10px 16px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #596673;
-}
-.plan-tabs > button.active {
-  color: #a84905;
-  box-shadow: inset 0 -4px #f28b20;
-}
-.plan-tabs button i {
-  display: inline-flex;
-  min-width: 24px;
-  height: 24px;
-  margin-left: 7px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #e8edf2;
-  color: #45515d;
-  font-size: 12px;
-  font-style: normal;
-}
-.plan-tabs .refresh-plans {
-  margin-left: auto;
-  gap: 7px;
-}
 .plan-stage-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
   padding: 24px 22px 18px;
 }
 .plan-stage-head h2 {
@@ -464,6 +426,37 @@ label input {
 .plan-stage-head span {
   color: #667482;
 }
+.plan-toolbar { display: flex; flex: none; gap: 10px; }
+.plan-toolbar button { white-space: nowrap; }
+.action-plan-picker { width: min(700px, calc(100vw - 24px)); max-height: min(85dvh, 760px); }
+.plan-picker-search { display: grid; gap: 7px; font-weight: 600; }
+.plan-picker-search input {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #ccd4dd;
+  border-radius: 6px;
+  font: inherit;
+}
+.plan-picker-list { display: grid; gap: 8px; max-height: 48dvh; overflow-y: auto; padding-right: 4px; }
+.plan-picker-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+  color: #293544;
+  background: #fff;
+  border: 1px solid #dce3e9;
+  border-radius: 8px;
+}
+.plan-picker-item:hover, .plan-picker-item:focus-visible { border-color: #dd792a; background: #fff8f1; }
+.plan-picker-item span { display: grid; gap: 4px; min-width: 0; }
+.plan-picker-item b { overflow-wrap: anywhere; }
+.plan-picker-item small { color: #667482; }
+.plan-picker-empty, .plan-picker-hint { color: #667482; font-size: 14px; }
+.plan-picker-empty { margin: 16px 0; text-align: center; }
+.plan-picker-hint { margin: 0; }
 .plan-message {
   margin: 0 22px 18px;
 }
@@ -576,9 +569,9 @@ label input {
   padding-top: 20px;
 }
 @media (max-width: 700px) {
-  .plan-tabs { padding: 0 8px; }
-  .plan-tabs .refresh-plans { margin-left: 0; }
-  .plan-stage-head { padding: 20px 16px 14px; }
+  .plan-stage-head { align-items: stretch; flex-direction: column; padding: 20px 16px 14px; }
+  .plan-toolbar { flex-wrap: wrap; }
+  .plan-picker-item { grid-template-columns: 1fr; gap: 10px; }
   .entry-dialog.action-plan-dialog {
     width: calc(100vw - 20px) !important;
     padding: 22px 18px !important;
