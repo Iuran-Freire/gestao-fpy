@@ -483,6 +483,9 @@ label input {
 .badge.plan-open { background: #fff1dc; color: #9a4d08; }
 .badge.plan-in_progress { background: #e8f1ff; color: #215b9c; }
 .badge.plan-completed { background: #e5f6ec; color: #247546; }
+.plan-row-overdue { background: #fff8f7; }
+.plan-due-date { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.badge.plan-overdue { background: #fce7e5; color: #ac2925; }
 .action-plan-dialog textarea[readonly],
 .action-plan-dialog input[readonly] {
   background: #f4f6f8;

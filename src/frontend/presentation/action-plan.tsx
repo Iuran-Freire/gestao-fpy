@@ -17,19 +17,26 @@ const emptyPlan = (recordId: string): ActionPlan => ({
 });
 const statusLabel: Record<ActionPlanStatus, string> = { open: "Aberto", in_progress: "Em andamento", completed: "Concluído" };
 const displayDate = (value: string) => value.split("-").reverse().join("/");
+const currentDate = () => {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Manaus", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const part = (type: string) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
 
-function PlanTable({ rows, plans, action, showStatus, emptyTitle, emptyDescription }: { rows: Entry[]; plans: Map<string, ActionPlan>; action: (entry: Entry, plan?: ActionPlan) => React.ReactNode; showStatus: boolean; emptyTitle: string; emptyDescription: string }) {
+function PlanTable({ rows, plans, action, showStatus, today, emptyTitle, emptyDescription }: { rows: Entry[]; plans: Map<string, ActionPlan>; action: (entry: Entry, plan?: ActionPlan) => React.ReactNode; showStatus: boolean; today: string; emptyTitle: string; emptyDescription: string }) {
   return <>
     <Table>
-      <TableHeader><TableRow>{["Data / turno", "Linha", "PN / Modelo", "Defeito", ...(showStatus ? ["Status do plano"] : []), "Ação"].map((title) => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader>
+      <TableHeader><TableRow>{["Data / turno", "Linha", "PN / Modelo", "Defeito", ...(showStatus ? ["Status do plano", "Prazo"] : []), "Ação"].map((title) => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader>
       <TableBody>{rows.slice(0, 100).map((entry) => {
         const plan = plans.get(entry.id);
-        return <TableRow key={entry.id}>
+        const overdue = !!plan?.dueDate && plan.status !== "completed" && plan.dueDate < today;
+        return <TableRow key={entry.id} className={overdue ? "plan-row-overdue" : undefined}>
           <TableCell>{displayDate(entry.date)}<small className="cell-sub">{entry.shift}º turno</small></TableCell>
           <TableCell>{entry.line}</TableCell>
           <TableCell><b>{entry.pn}</b><small className="cell-sub">{entry.model}</small></TableCell>
           <TableCell><b>{entry.code}</b><small className="cell-sub">{entry.description}</small></TableCell>
           {showStatus && <TableCell>{plan && <span className={`badge plan-${plan.status}`}>{statusLabel[plan.status]}</span>}</TableCell>}
+          {showStatus && <TableCell><div className="plan-due-date">{plan?.dueDate ? displayDate(plan.dueDate) : "A definir"}{overdue && <span className="badge plan-overdue">Atrasado</span>}</div></TableCell>}
           <TableCell>{action(entry, plan)}</TableCell>
         </TableRow>;
       })}</TableBody>
@@ -60,6 +67,11 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [deadline, setDeadline] = useState<"all" | "overdue" | "next7" | "without">("all");
+  const [today, setToday] = useState(currentDate);
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(currentDate()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const load = useCallback(async () => {
     if (!online) return;
     setLoading(true); setError("");
@@ -79,7 +91,6 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
   const availableDefects = entries.filter((entry) => entry.kind === "defect");
   const categories = [...new Set(availableDefects.map((entry) => entry.category).filter(Boolean))].sort();
   const lines = [...new Set(availableDefects.map((entry) => entry.line).filter(Boolean))].sort();
-  const today = new Date().toISOString().slice(0, 10);
   const nextWeek = new Date(`${today}T12:00:00Z`);
   nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
   const nextWeekIso = nextWeek.toISOString().slice(0, 10);
@@ -147,8 +158,8 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
     {error && <p className="error plan-message" role="alert">{error}</p>}
     {!online && <p className="notice plan-message">Os planos de ação precisam de conexão com o servidor.</p>}
     {view === "start" && !startAllowed && <p className="notice plan-message">Seu perfil pode consultar os planos, mas somente a Qualidade pode iniciar um registro.</p>}
-    {view === "start" ? <PlanTable rows={newRows} plans={byRecord} showStatus={false} emptyTitle="Nenhum defeito disponível" emptyDescription="Registre um defeito no FPY ou ajuste os filtros." action={(entry) => <button disabled={!online || !startAllowed} onClick={() => setSelection({ entry, mode: "quality" })}><ClipboardCheck size={16} /> Iniciar plano</button>} />
-      : <PlanTable rows={planRows} plans={byRecord} showStatus emptyTitle="Nenhum plano de ação encontrado" emptyDescription="Ajuste os filtros para localizar um plano." action={(entry, plan) => {
+    {view === "start" ? <PlanTable rows={newRows} plans={byRecord} showStatus={false} today={today} emptyTitle="Nenhum defeito disponível" emptyDescription="Registre um defeito no FPY ou ajuste os filtros." action={(entry) => <button disabled={!online || !startAllowed} onClick={() => setSelection({ entry, mode: "quality" })}><ClipboardCheck size={16} /> Iniciar plano</button>} />
+      : <PlanTable rows={planRows} plans={byRecord} showStatus today={today} emptyTitle="Nenhum plano de ação encontrado" emptyDescription="Ajuste os filtros para localizar um plano." action={(entry, plan) => {
         const canEdit = !!plan && plan.status !== "completed" && treatAllowed;
         return <button className={canEdit ? "" : "secondary"} disabled={canEdit && !online} onClick={() => setSelection({ entry, plan, mode: canEdit ? "engineering" : "view" })}>{canEdit ? <Wrench size={16} /> : <Eye size={16} />}{canEdit ? "Tratar plano" : "Visualizar"}</button>;
       }} />}
