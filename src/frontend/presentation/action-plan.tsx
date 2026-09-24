@@ -18,10 +18,10 @@ const emptyPlan = (recordId: string): ActionPlan => ({
 const statusLabel: Record<ActionPlanStatus, string> = { open: "Aberto", in_progress: "Em andamento", completed: "Concluído" };
 const displayDate = (value: string) => value.split("-").reverse().join("/");
 
-function PlanTable({ rows, plans, action }: { rows: Entry[]; plans: Map<string, ActionPlan>; action: (entry: Entry, plan?: ActionPlan) => React.ReactNode }) {
+function PlanTable({ rows, plans, action, showStatus, emptyTitle }: { rows: Entry[]; plans: Map<string, ActionPlan>; action: (entry: Entry, plan?: ActionPlan) => React.ReactNode; showStatus: boolean; emptyTitle: string }) {
   return <>
     <Table>
-      <TableHeader><TableRow>{["Data / turno", "Linha", "PN / Modelo", "Defeito", "Status", "Ação"].map((title) => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader>
+      <TableHeader><TableRow>{["Data / turno", "Linha", "PN / Modelo", "Defeito", ...(showStatus ? ["Status do plano"] : []), "Ação"].map((title) => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader>
       <TableBody>{rows.slice(0, 100).map((entry) => {
         const plan = plans.get(entry.id);
         return <TableRow key={entry.id}>
@@ -29,12 +29,12 @@ function PlanTable({ rows, plans, action }: { rows: Entry[]; plans: Map<string, 
           <TableCell>{entry.line}</TableCell>
           <TableCell><b>{entry.pn}</b><small className="cell-sub">{entry.model}</small></TableCell>
           <TableCell><b>{entry.code}</b><small className="cell-sub">{entry.description}</small></TableCell>
-          <TableCell>{plan && <span className={`badge plan-${plan.status}`}>{statusLabel[plan.status]}</span>}</TableCell>
+          {showStatus && <TableCell>{plan && <span className={`badge plan-${plan.status}`}>{statusLabel[plan.status]}</span>}</TableCell>}
           <TableCell>{action(entry, plan)}</TableCell>
         </TableRow>;
       })}</TableBody>
     </Table>
-    {!rows.length && <div className="plan-empty"><ClipboardCheck size={30} /><b>Nenhum plano de ação encontrado</b><span>Inicie um plano ou ajuste os filtros para localizar um registro.</span></div>}
+    {!rows.length && <div className="plan-empty"><ClipboardCheck size={30} /><b>{emptyTitle}</b><span>Ajuste os filtros para localizar um registro.</span></div>}
     {rows.length > 100 && <p className="plan-result-limit">Mostrando os 100 registros mais recentes. Use os filtros acima para localizar outros registros.</p>}
   </>;
 }
@@ -46,7 +46,8 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
   online: boolean;
   onYearChange: (year: string) => void;
 }) {
-  const [statusFilter, setStatusFilter] = useState<"all" | ActionPlanStatus>("all");
+  const [view, setView] = useState<"active" | "completed">("active");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "in_progress">("all");
   const [plans, setPlans] = useState<ActionPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -98,6 +99,7 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
     .filter((entry) => {
       const plan = byRecord.get(entry.id);
       if (normalizedResponsible && !plan?.responsible.toLocaleLowerCase("pt-BR").includes(normalizedResponsible)) return false;
+      if (view === "completed") return true;
       if (deadline === "overdue") return !!plan?.dueDate && plan.dueDate < today && plan.status !== "completed";
       if (deadline === "next7") return !!plan?.dueDate && plan.dueDate >= today && plan.dueDate <= nextWeekIso && plan.status !== "completed";
       if (deadline === "without") return !plan?.dueDate;
@@ -106,8 +108,10 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
     .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt));
   const planRows = defects.filter((entry) => {
     const plan = byRecord.get(entry.id);
-    return plan && (statusFilter === "all" || plan.status === statusFilter);
+    return plan && (view === "completed" ? plan.status === "completed" : plan.status !== "completed" && (statusFilter === "all" || plan.status === statusFilter));
   });
+  const activeCount = defects.filter((entry) => { const plan = byRecord.get(entry.id); return plan && plan.status !== "completed"; }).length;
+  const completedCount = defects.filter((entry) => byRecord.get(entry.id)?.status === "completed").length;
   const normalizedPickerSearch = pickerSearch.trim().toLocaleLowerCase("pt-BR");
   const newRows = availableDefects
     .filter((entry) => !byRecord.has(entry.id))
@@ -132,8 +136,8 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
       <label>Ano<select value={year} onChange={(event) => onYearChange(event.target.value)}>{Array.from({ length: 12 }, (_, index) => String(new Date().getFullYear() - index)).map((value) => <option key={value}>{value}</option>)}</select></label>
       <label>Categoria<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">Todas</option>{categories.map((value) => <option key={value}>{value}</option>)}</select></label>
       <label>Linha<select value={line} onChange={(event) => setLine(event.target.value)}><option value="all">Todas</option>{lines.map((value) => <option key={value}>{value}</option>)}</select></label>
-      <label>Situação do prazo<select value={deadline} onChange={(event) => setDeadline(event.target.value as typeof deadline)}><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="next7">Vencem em 7 dias</option><option value="without">Sem prazo definido</option></select></label>
-      <label>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todos</option><option value="open">Aberto</option><option value="in_progress">Em andamento</option><option value="completed">Concluído</option></select></label>
+      {view === "active" && <label>Situação do prazo<select value={deadline} onChange={(event) => setDeadline(event.target.value as typeof deadline)}><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="next7">Vencem em 7 dias</option><option value="without">Sem prazo definido</option></select></label>}
+      {view === "active" && <label>Status do plano<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todos</option><option value="open">Aberto</option><option value="in_progress">Em andamento</option></select></label>}
       <label>Ocorrência de<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
       <label>Ocorrência até<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
       <label className="plan-search">PN ou modelo<input placeholder="Pesquisar produto…" value={productSearch} onChange={(event) => setProductSearch(event.target.value)} /></label>
@@ -142,16 +146,20 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
       <button className="text-button clear-plan-filters" onClick={clearFilters}>Limpar filtros</button>
     </div>
     <section className="panel action-plan-workspace">
+    <div className="plan-list-tabs" aria-label="Situação dos planos de ação">
+      <button type="button" aria-pressed={view === "active"} className={view === "active" ? "active" : ""} onClick={() => setView("active")}>Planos em aberto <i>{activeCount}</i></button>
+      <button type="button" aria-pressed={view === "completed"} className={view === "completed" ? "active" : ""} onClick={() => setView("completed")}>Concluídos <i>{completedCount}</i></button>
+    </div>
     <div className="plan-stage-head"><div>
-      <h2>Planos de ação</h2>
-      <span>A Qualidade inicia o registro; a Engenharia acompanha e conclui o plano.</span>
+      <h2>{view === "active" ? "Planos em aberto" : "Planos concluídos"}</h2>
+      <span>{view === "active" ? "A Qualidade inicia o registro; a Engenharia acompanha e conclui o plano." : "Histórico dos planos finalizados pela Engenharia."}</span>
     </div><div className="plan-toolbar">
       <button className="secondary" title="Atualizar planos" disabled={!online || loading} onClick={() => void load()}><RefreshCw size={16} className={loading ? "spin" : ""} /> Atualizar</button>
       {startAllowed && <button disabled={!online} onClick={() => { setPickerSearch(""); setPickerOpen(true); }}><Plus size={16} /> Iniciar plano</button>}
     </div></div>
     {error && <p className="error plan-message" role="alert">{error}</p>}
     {!online && <p className="notice plan-message">Os planos de ação precisam de conexão com o servidor.</p>}
-    <PlanTable rows={planRows} plans={byRecord} action={(entry, plan) => {
+    <PlanTable rows={planRows} plans={byRecord} showStatus={view === "active"} emptyTitle={view === "active" ? "Nenhum plano em aberto" : "Nenhum plano concluído"} action={(entry, plan) => {
       const canEdit = !!plan && plan.status !== "completed" && treatAllowed;
       return <button className={canEdit ? "" : "secondary"} disabled={canEdit && !online} onClick={() => setSelection({ entry, plan, mode: canEdit ? "engineering" : "view" })}>{canEdit ? <Wrench size={16} /> : <Eye size={16} />}{canEdit ? "Tratar plano" : "Visualizar"}</button>;
     }} />
@@ -162,7 +170,7 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
       </div>
       {newRows.length > 50 && <p className="plan-picker-hint">Mostrando 50 de {newRows.length} defeitos. Use a busca para localizar o registro.</p>}
     </DialogContent></Dialog>}
-    {selection && <ActionPlanDialog {...selection} onClose={() => setSelection(null)} onSaved={async () => { if (selection.mode === "quality") clearFilters(); else { setStatusFilter("all"); setDeadline("all"); } setSelection(null); await load(); }} />}
+    {selection && <ActionPlanDialog {...selection} onClose={() => setSelection(null)} onSaved={async (saved) => { if (selection.mode === "quality") clearFilters(); else { setStatusFilter("all"); setDeadline("all"); } setView(saved.status === "completed" ? "completed" : "active"); setSelection(null); await load(); }} />}
     </section>
   </>;
 }

@@ -412,6 +412,36 @@ label input {
 .action-plan-workspace {
   overflow: hidden;
 }
+.plan-list-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 22px;
+  overflow-x: auto;
+  border-bottom: 1px solid #e1e6eb;
+}
+.plan-list-tabs button {
+  min-height: 56px;
+  padding: 10px 16px;
+  flex: none;
+  color: #596673;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.plan-list-tabs button.active { color: #a84905; box-shadow: inset 0 -4px #f28b20; }
+.plan-list-tabs i {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 12px;
+  color: #45515d;
+  background: #e8edf2;
+  font-size: 12px;
+  font-style: normal;
+}
 .plan-stage-head {
   display: flex;
   align-items: center;
@@ -569,6 +599,7 @@ label input {
   padding-top: 20px;
 }
 @media (max-width: 700px) {
+  .plan-list-tabs { padding: 0 8px; }
   .plan-stage-head { align-items: stretch; flex-direction: column; padding: 20px 16px 14px; }
   .plan-toolbar { flex-wrap: wrap; }
   .plan-picker-item { grid-template-columns: 1fr; gap: 10px; }
