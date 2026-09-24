@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClipboardCheck, Eye, Plus, RefreshCw, Wrench } from "lucide-react";
+import { ClipboardCheck, Eye, RefreshCw, Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/src/frontend/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/frontend/components/ui/table";
 import { fetchJson } from "@/src/frontend/infrastructure/offline";
@@ -18,7 +18,7 @@ const emptyPlan = (recordId: string): ActionPlan => ({
 const statusLabel: Record<ActionPlanStatus, string> = { open: "Aberto", in_progress: "Em andamento", completed: "Concluído" };
 const displayDate = (value: string) => value.split("-").reverse().join("/");
 
-function PlanTable({ rows, plans, action, showStatus, emptyTitle }: { rows: Entry[]; plans: Map<string, ActionPlan>; action: (entry: Entry, plan?: ActionPlan) => React.ReactNode; showStatus: boolean; emptyTitle: string }) {
+function PlanTable({ rows, plans, action, showStatus, emptyTitle, emptyDescription }: { rows: Entry[]; plans: Map<string, ActionPlan>; action: (entry: Entry, plan?: ActionPlan) => React.ReactNode; showStatus: boolean; emptyTitle: string; emptyDescription: string }) {
   return <>
     <Table>
       <TableHeader><TableRow>{["Data / turno", "Linha", "PN / Modelo", "Defeito", ...(showStatus ? ["Status do plano"] : []), "Ação"].map((title) => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader>
@@ -34,7 +34,7 @@ function PlanTable({ rows, plans, action, showStatus, emptyTitle }: { rows: Entr
         </TableRow>;
       })}</TableBody>
     </Table>
-    {!rows.length && <div className="plan-empty"><ClipboardCheck size={30} /><b>{emptyTitle}</b><span>Ajuste os filtros para localizar um registro.</span></div>}
+    {!rows.length && <div className="plan-empty"><ClipboardCheck size={30} /><b>{emptyTitle}</b><span>{emptyDescription}</span></div>}
     {rows.length > 100 && <p className="plan-result-limit">Mostrando os 100 registros mais recentes. Use os filtros acima para localizar outros registros.</p>}
   </>;
 }
@@ -46,14 +46,12 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
   online: boolean;
   onYearChange: (year: string) => void;
 }) {
-  const [view, setView] = useState<"active" | "completed">("active");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "in_progress">("all");
+  const [view, setView] = useState<"start" | "plans">("start");
+  const [statusFilter, setStatusFilter] = useState<"all" | ActionPlanStatus>("all");
   const [plans, setPlans] = useState<ActionPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [line, setLine] = useState("all");
   const [productSearch, setProductSearch] = useState("");
@@ -96,28 +94,18 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
     .filter((entry) => !to || entry.date <= to)
     .filter((entry) => !normalizedProduct || `${entry.pn} ${entry.model}`.toLocaleLowerCase("pt-BR").includes(normalizedProduct))
     .filter((entry) => !normalizedDefect || `${entry.code} ${entry.description} ${entry.position}`.toLocaleLowerCase("pt-BR").includes(normalizedDefect))
-    .filter((entry) => {
-      const plan = byRecord.get(entry.id);
-      if (normalizedResponsible && !plan?.responsible.toLocaleLowerCase("pt-BR").includes(normalizedResponsible)) return false;
-      if (view === "completed") return true;
-      if (deadline === "overdue") return !!plan?.dueDate && plan.dueDate < today && plan.status !== "completed";
-      if (deadline === "next7") return !!plan?.dueDate && plan.dueDate >= today && plan.dueDate <= nextWeekIso && plan.status !== "completed";
-      if (deadline === "without") return !plan?.dueDate;
-      return true;
-    })
     .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt));
-  const planRows = defects.filter((entry) => {
-    const plan = byRecord.get(entry.id);
-    return plan && (view === "completed" ? plan.status === "completed" : plan.status !== "completed" && (statusFilter === "all" || plan.status === statusFilter));
+  const newRows = defects.filter((entry) => !byRecord.has(entry.id));
+  const plansInView = defects.filter((entry) => byRecord.has(entry.id));
+  const planRows = plansInView.filter((entry) => {
+    const plan = byRecord.get(entry.id)!;
+    if (statusFilter !== "all" && plan.status !== statusFilter) return false;
+    if (normalizedResponsible && !plan.responsible.toLocaleLowerCase("pt-BR").includes(normalizedResponsible)) return false;
+    if (deadline === "overdue") return !!plan.dueDate && plan.dueDate < today && plan.status !== "completed";
+    if (deadline === "next7") return !!plan.dueDate && plan.dueDate >= today && plan.dueDate <= nextWeekIso && plan.status !== "completed";
+    if (deadline === "without") return !plan.dueDate;
+    return true;
   });
-  const activeCount = defects.filter((entry) => { const plan = byRecord.get(entry.id); return plan && plan.status !== "completed"; }).length;
-  const completedCount = defects.filter((entry) => byRecord.get(entry.id)?.status === "completed").length;
-  const normalizedPickerSearch = pickerSearch.trim().toLocaleLowerCase("pt-BR");
-  const newRows = availableDefects
-    .filter((entry) => !byRecord.has(entry.id))
-    .filter((entry) => !normalizedPickerSearch || [entry.date, entry.line, entry.pn, entry.model, entry.code, entry.description, entry.position]
-      .join(" ").toLocaleLowerCase("pt-BR").includes(normalizedPickerSearch))
-    .sort((left, right) => right.date.localeCompare(left.date) || right.createdAt.localeCompare(left.createdAt));
   const startAllowed = canStartActionPlan(user);
   const treatAllowed = canTreatActionPlan(user);
   function clearFilters() {
@@ -136,41 +124,35 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
       <label>Ano<select value={year} onChange={(event) => onYearChange(event.target.value)}>{Array.from({ length: 12 }, (_, index) => String(new Date().getFullYear() - index)).map((value) => <option key={value}>{value}</option>)}</select></label>
       <label>Categoria<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">Todas</option>{categories.map((value) => <option key={value}>{value}</option>)}</select></label>
       <label>Linha<select value={line} onChange={(event) => setLine(event.target.value)}><option value="all">Todas</option>{lines.map((value) => <option key={value}>{value}</option>)}</select></label>
-      {view === "active" && <label>Situação do prazo<select value={deadline} onChange={(event) => setDeadline(event.target.value as typeof deadline)}><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="next7">Vencem em 7 dias</option><option value="without">Sem prazo definido</option></select></label>}
-      {view === "active" && <label>Status do plano<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todos</option><option value="open">Aberto</option><option value="in_progress">Em andamento</option></select></label>}
+      {view === "plans" && <label>Situação do prazo<select value={deadline} onChange={(event) => setDeadline(event.target.value as typeof deadline)}><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="next7">Vencem em 7 dias</option><option value="without">Sem prazo definido</option></select></label>}
+      {view === "plans" && <label>Status do plano<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todos</option><option value="open">Aberto</option><option value="in_progress">Em andamento</option><option value="completed">Concluído</option></select></label>}
       <label>Ocorrência de<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
       <label>Ocorrência até<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
       <label className="plan-search">PN ou modelo<input placeholder="Pesquisar produto…" value={productSearch} onChange={(event) => setProductSearch(event.target.value)} /></label>
       <label className="plan-search">Código, defeito ou posição<input placeholder="Pesquisar defeito…" value={defectSearch} onChange={(event) => setDefectSearch(event.target.value)} /></label>
-      <label className="plan-responsible">Responsável<input placeholder="Nome do responsável…" value={responsibleSearch} onChange={(event) => setResponsibleSearch(event.target.value)} /></label>
+      {view === "plans" && <label className="plan-responsible">Responsável<input placeholder="Nome do responsável…" value={responsibleSearch} onChange={(event) => setResponsibleSearch(event.target.value)} /></label>}
       <button className="text-button clear-plan-filters" onClick={clearFilters}>Limpar filtros</button>
     </div>
     <section className="panel action-plan-workspace">
     <div className="plan-list-tabs" aria-label="Situação dos planos de ação">
-      <button type="button" aria-pressed={view === "active"} className={view === "active" ? "active" : ""} onClick={() => setView("active")}>Planos em aberto <i>{activeCount}</i></button>
-      <button type="button" aria-pressed={view === "completed"} className={view === "completed" ? "active" : ""} onClick={() => setView("completed")}>Concluídos <i>{completedCount}</i></button>
+      <button type="button" aria-pressed={view === "start"} className={view === "start" ? "active" : ""} onClick={() => setView("start")}>Iniciar plano de ação <i>{newRows.length}</i></button>
+      <button type="button" aria-pressed={view === "plans"} className={view === "plans" ? "active" : ""} onClick={() => setView("plans")}>Planos de ação <i>{plansInView.length}</i></button>
     </div>
     <div className="plan-stage-head"><div>
-      <h2>{view === "active" ? "Planos em aberto" : "Planos concluídos"}</h2>
-      <span>{view === "active" ? "A Qualidade inicia o registro; a Engenharia acompanha e conclui o plano." : "Histórico dos planos finalizados pela Engenharia."}</span>
+      <h2>{view === "start" ? "Registro inicial da Qualidade" : "Planos de ação"}</h2>
+      <span>{view === "start" ? "Selecione um defeito e registre a evidência inicial para a Engenharia." : "Acompanhe os planos abertos, em andamento e concluídos."}</span>
     </div><div className="plan-toolbar">
       <button className="secondary" title="Atualizar planos" disabled={!online || loading} onClick={() => void load()}><RefreshCw size={16} className={loading ? "spin" : ""} /> Atualizar</button>
-      {startAllowed && <button disabled={!online} onClick={() => { setPickerSearch(""); setPickerOpen(true); }}><Plus size={16} /> Iniciar plano</button>}
     </div></div>
     {error && <p className="error plan-message" role="alert">{error}</p>}
     {!online && <p className="notice plan-message">Os planos de ação precisam de conexão com o servidor.</p>}
-    <PlanTable rows={planRows} plans={byRecord} showStatus={view === "active"} emptyTitle={view === "active" ? "Nenhum plano em aberto" : "Nenhum plano concluído"} action={(entry, plan) => {
-      const canEdit = !!plan && plan.status !== "completed" && treatAllowed;
-      return <button className={canEdit ? "" : "secondary"} disabled={canEdit && !online} onClick={() => setSelection({ entry, plan, mode: canEdit ? "engineering" : "view" })}>{canEdit ? <Wrench size={16} /> : <Eye size={16} />}{canEdit ? "Tratar plano" : "Visualizar"}</button>;
-    }} />
-    {pickerOpen && <Dialog open onOpenChange={(open) => { if (!open) setPickerOpen(false); }}><DialogContent className="action-plan-picker"><DialogHeader><DialogTitle>Iniciar plano de ação</DialogTitle><DialogDescription>Selecione um defeito registrado para acrescentar a evidência da Qualidade.</DialogDescription></DialogHeader>
-      <label className="plan-picker-search">Buscar defeito<input autoFocus value={pickerSearch} onChange={(event) => setPickerSearch(event.target.value)} placeholder="Data, linha, PN, modelo ou defeito" /></label>
-      <div className="plan-picker-list">{newRows.slice(0, 50).map((entry) => <button key={entry.id} type="button" className="plan-picker-item" onClick={() => { setPickerOpen(false); setSelection({ entry, mode: "quality" }); }}><span><b>{entry.pn} · {entry.model}</b><small>{displayDate(entry.date)} · {entry.shift}º turno · {entry.line}</small></span><span><b>{entry.code} · {entry.description}</b><small>Posição {entry.position}</small></span></button>)}
-        {!newRows.length && <p className="plan-picker-empty">Nenhum defeito disponível. Ajuste a busca ou o ano selecionado.</p>}
-      </div>
-      {newRows.length > 50 && <p className="plan-picker-hint">Mostrando 50 de {newRows.length} defeitos. Use a busca para localizar o registro.</p>}
-    </DialogContent></Dialog>}
-    {selection && <ActionPlanDialog {...selection} onClose={() => setSelection(null)} onSaved={async (saved) => { if (selection.mode === "quality") clearFilters(); else { setStatusFilter("all"); setDeadline("all"); } setView(saved.status === "completed" ? "completed" : "active"); setSelection(null); await load(); }} />}
+    {view === "start" && !startAllowed && <p className="notice plan-message">Seu perfil pode consultar os planos, mas somente a Qualidade pode iniciar um registro.</p>}
+    {view === "start" ? <PlanTable rows={newRows} plans={byRecord} showStatus={false} emptyTitle="Nenhum defeito disponível" emptyDescription="Registre um defeito no FPY ou ajuste os filtros." action={(entry) => <button disabled={!online || !startAllowed} onClick={() => setSelection({ entry, mode: "quality" })}><ClipboardCheck size={16} /> Iniciar plano</button>} />
+      : <PlanTable rows={planRows} plans={byRecord} showStatus emptyTitle="Nenhum plano de ação encontrado" emptyDescription="Ajuste os filtros para localizar um plano." action={(entry, plan) => {
+        const canEdit = !!plan && plan.status !== "completed" && treatAllowed;
+        return <button className={canEdit ? "" : "secondary"} disabled={canEdit && !online} onClick={() => setSelection({ entry, plan, mode: canEdit ? "engineering" : "view" })}>{canEdit ? <Wrench size={16} /> : <Eye size={16} />}{canEdit ? "Tratar plano" : "Visualizar"}</button>;
+      }} />}
+    {selection && <ActionPlanDialog {...selection} onClose={() => setSelection(null)} onSaved={async () => { clearFilters(); setView("plans"); setSelection(null); await load(); }} />}
     </section>
   </>;
 }
