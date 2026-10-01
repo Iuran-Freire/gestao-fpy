@@ -118,6 +118,14 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
     return true;
   });
   const startAllowed = canStartActionPlan(user);
+  const summaryPlans = (view === "plans" ? planRows : plansInView).map((entry) => byRecord.get(entry.id)!);
+  const indicators = [
+    { label: "Total de planos", value: summaryPlans.length, tone: "total" },
+    { label: "Abertos", value: summaryPlans.filter((plan) => plan.status === "open").length, tone: "open" },
+    { label: "Em andamento", value: summaryPlans.filter((plan) => plan.status === "in_progress").length, tone: "progress" },
+    { label: "Atrasados", value: summaryPlans.filter((plan) => plan.status !== "completed" && plan.dueDate && plan.dueDate < today).length, tone: "overdue" },
+    { label: "Concluídos", value: summaryPlans.filter((plan) => plan.status === "completed").length, tone: "completed" },
+  ];
   const treatAllowed = canTreatActionPlan(user);
   function clearFilters() {
     setCategory("all");
@@ -145,6 +153,12 @@ export function ActionPlanWorkspace({ entries, user, year, online, onYearChange 
       <button className="text-button clear-plan-filters" onClick={clearFilters}>Limpar filtros</button>
     </div>
     <section className="panel action-plan-workspace">
+    <div className="plan-summary" aria-label="Indicadores dos planos de ação">
+      <dl className="plan-summary-grid">{indicators.map(({ label, value, tone }) => <div key={tone} className={`plan-summary-card plan-summary-${tone}`}>
+        <dt>{label}</dt><dd>{value.toLocaleString("pt-BR")}</dd>
+      </div>)}</dl>
+      <p>Resumo dos planos nos filtros atuais, incluindo os registros além do limite da tabela. Atrasados são planos abertos ou em andamento com prazo vencido.</p>
+    </div>
     <div className="plan-list-tabs" aria-label="Situação dos planos de ação">
       <button type="button" aria-pressed={view === "start"} className={view === "start" ? "active" : ""} onClick={() => setView("start")}>Iniciar plano de ação <i>{newRows.length}</i></button>
       <button type="button" aria-pressed={view === "plans"} className={view === "plans" ? "active" : ""} onClick={() => setView("plans")}>Planos de ação <i>{plansInView.length}</i></button>

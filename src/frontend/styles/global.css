@@ -408,6 +408,23 @@ label input {
 .action-plan-workspace {
   overflow: hidden;
 }
+.plan-summary { padding: 20px 22px 16px; border-bottom: 1px solid #e1e6eb; }
+.plan-summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.plan-summary-card { padding: 14px 16px; border: 1px solid #e1e6eb; border-top: 3px solid #667482; border-radius: 10px; background: #f8fafc; }
+.plan-summary-card dt { color: #596673; font-size: 13px; font-weight: 600; }
+.plan-summary-card dd { margin: 6px 0 0; color: #35414d; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.plan-summary-open { border-top-color: #c77518; }
+.plan-summary-progress { border-top-color: #3076bd; }
+.plan-summary-overdue { border-top-color: #c13d35; background: #fff8f7; }
+.plan-summary-overdue dd { color: #ac2925; }
+.plan-summary-completed { border-top-color: #308452; }
+.plan-summary > p { margin: 10px 0 0; color: #667482; font-size: 12px; line-height: 1.5; }
+@media (max-width: 900px) { .plan-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 540px) {
+  .plan-summary { padding: 16px; }
+  .plan-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .plan-summary-card { padding: 12px; }
+}
 .plan-list-tabs {
   display: flex;
   gap: 8px;
