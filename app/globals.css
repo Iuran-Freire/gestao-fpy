@@ -593,7 +593,7 @@ label input {
 }
 
 .powerbi-dashboard {
-  gap: 18px;
+  gap: 24px;
 }
 .dashboard-controls {
   overflow: visible;
@@ -657,24 +657,75 @@ label input {
 .powerbi-grid {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
-  gap: 16px;
+  gap: 22px;
 }
 .powerbi-grid .chart-card {
-  min-height: 370px;
+  min-height: 382px;
+  overflow: hidden;
 }
 .powerbi-grid .panel-head {
-  padding: 17px 20px;
+  min-height: 88px;
+  padding: 19px 22px 16px;
 }
 .powerbi-grid .panel-head h2 {
-  font-size: 17px;
+  font-size: 18px;
+  line-height: 1.2;
 }
 .powerbi-grid .panel-head span {
   color: #e27618;
   font-weight: 600;
+  line-height: 1.35;
 }
-.powerbi-chart {
-  height: 292px;
-  padding-bottom: 12px;
+.powerbi-grid .powerbi-chart {
+  height: 278px;
+  padding: 6px 14px 16px 6px;
+}
+.powerbi-grid .ranking-chart {
+  height: 278px;
+  padding: 4px 10px 16px 2px;
+}
+.chart-empty {
+  display: grid;
+  min-height: 278px;
+  place-items: center;
+  padding: 28px;
+  color: #6b7885;
+  text-align: center;
+}
+.analysis-insights {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 14px;
+}
+.analysis-insights article {
+  min-width: 0;
+  padding: 17px 19px;
+  border: 1px solid #e0e6eb;
+  border-left: 4px solid #ec8b2d;
+  border-radius: 9px;
+  background: #fff;
+}
+.analysis-insights span {
+  display: block;
+  color: #788490;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.analysis-insights strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 7px;
+  color: #283541;
+  font-size: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.analysis-insights p {
+  margin: 5px 0 0;
+  color: #65727f;
+  font-size: 13px;
 }
 .dashboard-tooltip {
   display: grid;
@@ -706,7 +757,10 @@ label input {
     grid-template-columns: 1fr;
   }
   .powerbi-grid .chart-card {
-    min-height: 350px;
+    min-height: 360px;
+  }
+  .analysis-insights {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -730,10 +784,13 @@ label input {
     grid-column: 1 / -1;
   }
   .powerbi-grid .chart-card {
-    min-height: 330px;
+    min-height: 340px;
   }
-  .powerbi-chart {
-    height: 260px;
+  .powerbi-grid .powerbi-chart {
+    height: 245px;
+  }
+  .powerbi-grid .ranking-chart {
+    height: 245px;
   }
 }
 .statusbar {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Area, AreaChart, Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, AlertTriangle, Factory, RotateCcw, ShieldCheck } from "lucide-react";
 import { isoWeek, summarize, totalFpy, type Entry, type Group } from "@/src/shared/domain/fpy";
 
@@ -10,6 +10,8 @@ const FAMILIES = ["Todos", "Battery", "Adapter", "LED Driver", "SMT", "Modem", "
 const number = (value: number) => value.toLocaleString("pt-BR");
 const percent = (value: number | null) => value === null ? "—" : value.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+const FPY_TARGET = 98.5;
+const shortLabel = (value: string, length = 22) => value.length > length ? `${value.slice(0, length - 1)}…` : value;
 
 function familyOf(entry: Pick<Entry, "model" | "line" | "pn">) {
   const value = normalize(`${entry.model} ${entry.line} ${entry.pn}`);
@@ -64,6 +66,30 @@ function YieldChart({ data, title, subtitle }: { data: Array<Metric & { label?: 
   </section>;
 }
 
+type Ranking = { name: string; quantity: number; index: number | null; fpy?: number | null };
+function RankingTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ payload?: Ranking }>; label?: string }) {
+  const item = payload?.[0]?.payload;
+  if (!active || !item) return null;
+  return <div className="dashboard-tooltip ranking-tooltip"><b>{label}</b><span>Índice de falhas: {percent(item.index)}</span><span>Quantidade: {number(item.quantity)}</span></div>;
+}
+
+function RankingChart({ data, title, subtitle, empty }: { data: Ranking[]; title: string; subtitle: string; empty: string }) {
+  return <section className="panel chart-card ranking-card">
+    <div className="panel-head"><div><h2>{title}</h2><span>{subtitle}</span></div></div>
+    {data.length ? <div className="chart-area ranking-chart"><ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} layout="vertical" margin={{ top: 8, right: 48, left: 10, bottom: 8 }} barCategoryGap="24%">
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e4e8eb" />
+        <XAxis type="number" tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey="name" width={122} tickFormatter={(value) => shortLabel(String(value))} tick={{ fontSize: 11, fill: "#4d5a66" }} axisLine={false} tickLine={false} />
+        <Tooltip content={<RankingTooltip />} cursor={{ fill: "#fff3e6" }} />
+        <Bar dataKey="index" name="Índice de falhas" fill="#ef9a3d" radius={[0, 4, 4, 0]} maxBarSize={27}>
+          <LabelList dataKey="index" position="right" formatter={(value) => `${Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`} fill="#6a5138" fontSize={11} />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer></div> : <div className="chart-empty">{empty}</div>}
+  </section>;
+}
+
 export default function AnalyticsDashboard({ entries, year, onYearChange }: { entries: Entry[]; year: string; onYearChange: (year: string) => void }) {
   const [family, setFamily] = useState("Todos");
   const [month, setMonth] = useState("all");
@@ -112,6 +138,9 @@ export default function AnalyticsDashboard({ entries, year, onYearChange }: { en
     index: production > 0 ? Number(((quantity / production) * 100).toFixed(2)) : null,
     fpy: production > 0 ? Number((100 - (quantity / production) * 100).toFixed(2)) : null,
   })).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+  const primaryFailure = byFailure[0];
+  const targetGap = fpy === null ? null : Number((fpy - FPY_TARGET).toFixed(2));
+  const primaryFailureShare = primaryFailure && defects > 0 ? (primaryFailure.quantity / defects) * 100 : null;
   const topDefectsByShift = ["1", "2", "3"].map((shiftNumber) => {
     const totals = new Map<string, { code: string; description: string; quantity: number }>();
     filteredEntries.filter((entry) => entry.kind === "defect" && entry.shift === shiftNumber).forEach((entry) => {
@@ -155,18 +184,23 @@ export default function AnalyticsDashboard({ entries, year, onYearChange }: { en
 
     {!groups.length ? <section className="panel dashboard-empty"><Activity size={34} /><h2>Sem dados para os filtros selecionados</h2><p>Altere os filtros ou registre produção e defeitos para gerar os indicadores.</p></section> : <>
       <div className="metrics analytics-metrics">
-        <article className="metric highlight"><span>FPY DO PERÍODO</span><strong>{percent(fpy)}</strong><p>Aprovação na primeira passagem</p><Activity className="metric-icon" /></article>
+        <article className="metric highlight"><span>FPY DO PERÍODO</span><strong>{percent(fpy)}</strong><p>{targetGap === null ? "Sem base de produção" : `${Math.abs(targetGap).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} p.p. ${targetGap >= 0 ? "acima" : "abaixo"} da meta`}</p><Activity className="metric-icon" /></article>
         <article className="metric"><span>PRODUÇÃO</span><strong>{number(production)}</strong><p>Peças produzidas</p><Factory className="metric-icon neutral" /></article>
-        <article className="metric"><span>DEFEITOS</span><strong>{number(defects)}</strong><p>{percent(defectRate)} da produção</p><AlertTriangle className="metric-icon neutral" /></article>
+        <article className="metric"><span>ÍNDICE DE FALHAS</span><strong>{percent(defectRate)}</strong><p>{number(defects)} defeitos registrados</p><AlertTriangle className="metric-icon neutral" /></article>
         <article className="metric"><span>GRUPOS A VERIFICAR</span><strong>{number(incomplete)}</strong><p>Sem produção ou inconsistentes</p><ShieldCheck className="metric-icon neutral" /></article>
       </div>
+      <section className="analysis-insights" aria-label="Leitura analítica do período">
+        <article><span>Meta de FPY</span><strong>{FPY_TARGET.toLocaleString("pt-BR", { minimumFractionDigits: 1 })}%</strong><p>{targetGap === null ? "Aguardando produção para comparar." : targetGap >= 0 ? "Resultado dentro da meta definida." : "Resultado abaixo da meta definida."}</p></article>
+        <article><span>Principal causa</span><strong>{primaryFailure ? shortLabel(primaryFailure.name, 34) : "Sem defeitos"}</strong><p>{primaryFailure ? `${number(primaryFailure.quantity)} ocorrências no período` : "Não há falhas registradas."}</p></article>
+        <article><span>Concentração da causa</span><strong>{percent(primaryFailureShare)}</strong><p>{primaryFailure ? "Participação da principal causa nas falhas." : "Sem base para cálculo."}</p></article>
+      </section>
       <div className="powerbi-grid">
         <YieldChart data={monthly} title="FPY por mês" subtitle="Resultado mensal" />
-        <section className="panel chart-card"><div className="panel-head"><div><h2>Índice por modelo · Top 5</h2><span>Maior índice de falhas</span></div></div><div className="chart-area powerbi-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={byModel} margin={{ top: 16, right: 12, left: -10, bottom: 36 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e8eb" /><XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-18} textAnchor="end" interval={0} /><YAxis yAxisId="index" tickFormatter={(value) => value + "%"} tick={{ fontSize: 11 }} /><YAxis yAxisId="fpy" orientation="right" domain={[0, 100]} hide /><Tooltip content={<ChartTooltip />} /><Legend /><Bar yAxisId="index" dataKey="index" name="Índice de falhas" fill="#f3b66f" radius={[3, 3, 0, 0]} /><Line yAxisId="fpy" type="monotone" dataKey="fpy" name="FPY" stroke="#ef881b" strokeWidth={3} dot={{ r: 4 }} /></ComposedChart></ResponsiveContainer></div></section>
+        <RankingChart data={byFailure} title="Falhas críticas · Top 5" subtitle="Impacto de cada falha sobre a produção" empty="Não há falhas registradas neste período." />
         <YieldChart data={weekly} title="FPY por semana" subtitle="Resultado semanal" />
-        <section className="panel chart-card"><div className="panel-head"><div><h2>Índice por falha · Top 5</h2><span>Falhas mais representativas</span></div></div><div className="chart-area powerbi-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={byFailure} margin={{ top: 16, right: 12, left: -10, bottom: 48 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e8eb" /><XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-18} textAnchor="end" interval={0} /><YAxis yAxisId="index" tickFormatter={(value) => value + "%"} tick={{ fontSize: 11 }} /><YAxis yAxisId="fpy" orientation="right" domain={[0, 100]} hide /><Tooltip content={<ChartTooltip />} /><Legend /><Bar yAxisId="index" dataKey="index" name="Índice de falhas" fill="#f3b66f" radius={[3, 3, 0, 0]} /><Line yAxisId="fpy" type="monotone" dataKey="fpy" name="FPY" stroke="#ef881b" strokeWidth={3} dot={{ r: 4 }} /></ComposedChart></ResponsiveContainer></div></section>
+        <RankingChart data={byModel.map((item) => ({ ...item, quantity: item.defects }))} title="Modelos com maior perda · Top 5" subtitle="Índice de falhas por modelo" empty="Não há modelos com produção para comparar." />
         <YieldChart data={daily} title="FPY por dia" subtitle="Resultado diário · últimos 31 dias" />
-        <section className="panel chart-card"><div className="panel-head"><div><h2>FPY total por família</h2><span>Comparação dos processos disponíveis</span></div></div><div className="chart-area powerbi-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={familySummary} margin={{ top: 16, right: 12, left: -10, bottom: 28 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e8eb" /><XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-12} textAnchor="end" interval={0} /><YAxis domain={["dataMin - 2", 100]} tickFormatter={(value) => value + "%"} tick={{ fontSize: 11 }} /><Tooltip content={<ChartTooltip />} /><Bar dataKey="fpy" name="FPY" fill="#f3b66f" radius={[3, 3, 0, 0]} /></ComposedChart></ResponsiveContainer></div></section>
+        <RankingChart data={familySummary.map((item) => ({ ...item, quantity: 0, index: item.fpy }))} title="Comparação por família" subtitle="Índice de falhas por processo" empty="Não há famílias com produção para comparar." />
         <section className="panel chart-card chart-wide shift-defects"><div className="panel-head"><div><h2>Top defeitos por turno</h2><span>As cinco falhas com maior quantidade em cada turno</span></div></div><div className="shift-defect-grid">{topDefectsByShift.map((group) => <article key={group.shift}><h3>{group.shift}º turno</h3>{group.items.length ? group.items.map((item, index) => <div className="shift-defect-row" key={`${item.code}-${item.description}`}><span className="rank">{index + 1}</span><div><b>{item.code}</b><small>{item.description}</small><i style={{ width: `${Math.max(6, (item.quantity / group.items[0].quantity) * 100)}%` }} /></div><strong>{number(item.quantity)}</strong></div>) : <p>Sem defeitos no período.</p>}</article>)}</div></section>
       </div>
     </>}
