@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createCsvExport } from "../src/frontend/application/csv.ts";
+import { createCsvExport } from "../../src/frontend/application/csv.ts";
 
 const entry = {
   id: "csv-test-1",

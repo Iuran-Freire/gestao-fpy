@@ -34,7 +34,7 @@ import {
   TableBody,
   TableCell,
 } from "@/src/frontend/components/ui/table";
-import { Choice } from "./entry-form";
+import { Choice } from "@/src/frontend/components/forms/choice";
 import { fetchJson } from "@/src/frontend/infrastructure/offline";
 import type { User } from "@/src/shared/domain/fpy";
 type UserAudit = {

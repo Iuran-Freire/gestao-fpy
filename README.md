@@ -6,6 +6,8 @@ Há também uma configuração independente em `wrangler.cloudflare.jsonc` para 
 
 ## Organização do código
 
+Veja o [guia da estrutura do projeto](docs/ESTRUTURA.md) para localizar cada tela, regra e configuração.
+
 - `src/frontend/`: interface React, estado da aplicação, IndexedDB, sincronização HTTP e exportação CSV.
 - `src/backend/`: autenticação, permissões, casos de uso do servidor e acesso ao D1/R2.
 - `src/shared/domain/`: tipos, validações e cálculos usados pelo frontend e pelo backend, sem dependência de interface ou banco.
@@ -13,7 +15,9 @@ Há também uma configuração independente em `wrangler.cloudflare.jsonc` para 
 - `src/frontend/components/ui/`: componentes visuais reutilizáveis do design system.
 - `src/backend/database/`: esquema e migrações versionadas, incluindo auditoria e proteção de revisão.
 - `public/`: logo oficial, ícones e recursos PWA.
-- `tests/`: regras de domínio e integração local.
+- `tests/unit/`: regras de domínio, exportação e banco em memória.
+- `tests/integration/`: integração com servidor e banco locais.
+- `docs/`: guia de organização e manutenção.
 
 ## Regras implementadas
 
@@ -56,9 +60,9 @@ O manifesto lista todos os objetos JSON de um backup completo. Para restauraçã
 - `npm ci`: instalar dependências.
 - `npm run dev`: prévia em localhost:5173.
 - `npm run build`: build de produção.
-- `node --test tests/*.test.mjs`: regras de cálculo, validação, CSV e cadastros.
-- `node tests/api-local.mjs`: integração contra prévia local; cria somente registros fictícios identificados como QA.
-- `node tests/users-local.mjs`: contas fictícias, login, permissões, edição, desativação, redefinição e revogação de sessões.
+- `npm test`: regras de cálculo, validação, CSV e cadastros.
+- `node tests/integration/api-local.mjs`: integração contra prévia local; cria somente registros fictícios identificados como QA.
+- `node tests/integration/users-local.mjs`: contas fictícias, login, permissões, edição, desativação, redefinição e revogação de sessões.
 - `npx tsc --noEmit`: verificação TypeScript.
 
 Para banco local, aplicar as migrações de `src/backend/database/migrations/` em ordem com Wrangler usando `dist/server/wrangler.json` e `.wrangler/state`. Não repetir migrações aplicadas. O banco local e os registros QA não são publicados.
@@ -90,7 +94,7 @@ Gestão → Cadastros permite cadastrar, editar, inativar e reativar produtos e 
 
 A migração `src/backend/database/migrations/0004_catalog.sql` cria a base e importa 251 PNs e 1.210 defeitos das abas CLASSIFICAÇÃO e DADOS dos seis arquivos BD_*_2026.xlsm fornecidos em 17/09/2026. Os PNs 16B071-0, 16B072-0, 24V0008-0 e 90K0008-0 foram excluídos da importação por orientação do responsável. As planilhas originais não são alteradas. Os cadastros acompanham a sincronização offline e o backup versão 5.
 
-Na restauração em banco isolado, após criar o esquema, remover os cadastros e auditorias de carga inicial antes de importar o backup. Suspender os gatilhos de auditoria de `catalog` durante a restauração, preservando os IDs do arquivo, e recriá-los ao final. O teste `tests/backup-local.mjs` verifica esse procedimento e as contagens de ambas as tabelas.
+Na restauração em banco isolado, após criar o esquema, remover os cadastros e auditorias de carga inicial antes de importar o backup. Suspender os gatilhos de auditoria de `catalog` durante a restauração, preservando os IDs do arquivo, e recriá-los ao final. O teste `tests/integration/backup-local.mjs` verifica esse procedimento e as contagens de ambas as tabelas.
 
 As migrações 0004 e a primeira versão de 0005 foram aplicadas ao D1 remoto em 20/09/2026. Em 23/09/2026, o esquema antigo e vazio de planos foi preservado como `action_plans_legacy`, e a tabela `action_plans` foi criada no formato atual por `scripts/cloudflare/upgrade-legacy-action-plans.sql`. Não repetir essa atualização no banco remoto nem aplicá-la a bancos novos que já usam a versão atual de 0005. A coluna de categoria dos registros guarda Interno; Class. CC é um campo adicional, vazio nos registros antigos.
 

@@ -5,8 +5,8 @@ import {
   periodRange,
   periodYears,
   filterFpyEntries,
-} from "../src/frontend/application/fpy-filters.ts";
-import { summarize } from "../src/shared/domain/fpy.ts";
+} from "../../src/frontend/application/fpy-filters.ts";
+import { summarize } from "../../src/shared/domain/fpy.ts";
 
 const blank = { from: "", to: "" };
 const base = {

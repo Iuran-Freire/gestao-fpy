@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validateActionPlan } from "../src/shared/domain/pqc.ts";
+import { validateActionPlan } from "../../src/shared/domain/pqc.ts";
 
 const base = {
   id: "test-plan-0001", date: "2026-09-20", shift: "2", line: "smt-1", pn: "24K0015-0",

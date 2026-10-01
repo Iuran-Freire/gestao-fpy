@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, readdirSync } from "node:fs";
-import { validateCatalog } from "../src/shared/domain/catalog.ts";
-import { validateEntry } from "../src/shared/domain/fpy.ts";
+import { validateCatalog } from "../../src/shared/domain/catalog.ts";
+import { validateEntry } from "../../src/shared/domain/fpy.ts";
 
 function migrated() {
   const db = new DatabaseSync(":memory:");
-  const migrations = new URL("../src/backend/database/migrations/", import.meta.url);
+  const migrations = new URL("../../src/backend/database/migrations/", import.meta.url);
   for (const file of readdirSync(migrations).filter(f => f.endsWith(".sql")).sort())
     db.exec(readFileSync(new URL(file, migrations),"utf8"));
   return db;

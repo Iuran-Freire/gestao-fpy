@@ -50,14 +50,14 @@ import {
 import { fetchJson, visibleEntries } from "@/src/frontend/infrastructure/offline";
 import { createCsvExport, downloadCsv } from "@/src/frontend/application/csv";
 import { filterFpyEntries, periodYears } from "@/src/frontend/application/fpy-filters";
-import { FpyFilters } from "./fpy-filters";
-import { EntryForm } from "./entry-form";
-import UserManagement, { UserEditor, PasswordEditor } from "./user-management";
-import Login from "./login";
-import { Profile } from "./profile";
-import CatalogManagement from "./catalog-management";
-import AnalyticsDashboard from "./analytics-dashboard";
-import { ActionPlanWorkspace } from "./action-plan";
+import { FpyFilters } from "../fpy/fpy-filters";
+import { EntryForm } from "../fpy/entry-form";
+import UserManagement, { UserEditor, PasswordEditor } from "../management/user-management";
+import Login from "../auth/login";
+import { Profile } from "../auth/profile";
+import CatalogManagement from "../management/catalog-management";
+import AnalyticsDashboard from "../analytics/analytics-dashboard";
+import { ActionPlanWorkspace } from "../action-plans/action-plan";
 const percent = (v: number | null) =>
   v === null
     ? "—"
@@ -84,7 +84,7 @@ const subscribeToClient = () => () => {};
 function useClientReady() {
   return useSyncExternalStore(subscribeToClient, () => true, () => false);
 }
-export default function Dashboard() {
+export default function FpyWorkspace() {
   const clientReady = useClientReady();
   const app = useFpy();
   const setAppMessage = app.setMessage;

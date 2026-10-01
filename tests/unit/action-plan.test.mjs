@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, readdirSync } from "node:fs";
-import { canStartActionPlan, canTreatActionPlan, validateActionPlan } from "../src/shared/domain/action-plan.ts";
+import { canStartActionPlan, canTreatActionPlan, validateActionPlan } from "../../src/shared/domain/action-plan.ts";
 
 function migrated() {
   const db = new DatabaseSync(":memory:");
   db.exec("PRAGMA foreign_keys=ON");
-  const migrations = new URL("../src/backend/database/migrations/", import.meta.url);
+  const migrations = new URL("../../src/backend/database/migrations/", import.meta.url);
   for (const file of readdirSync(migrations).filter((name) => name.endsWith(".sql")).sort()) db.exec(readFileSync(new URL(file, migrations), "utf8"));
   return db;
 }

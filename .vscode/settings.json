@@ -10,7 +10,16 @@
     ".vscode": true,
     "build": true,
     "node_modules": true,
-    "scripts": true
+    "scripts": false,
+    ".next": true,
+    ".vinext": true,
+    ".wrangler": true,
+    ".sites-runtime": true,
+    "dist": true,
+    "out": true,
+    "coverage": true,
+    "**/*.tsbuildinfo": true,
+    "next-env.d.ts": true
   },
   "files.watcherExclude": {
     "**/.next/**": true,

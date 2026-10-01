@@ -1,94 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, AlertTriangle, Factory, RotateCcw, ShieldCheck } from "lucide-react";
-import { isoWeek, summarize, totalFpy, type Entry, type Group } from "@/src/shared/domain/fpy";
+import { isoWeek, summarize, totalFpy, type Entry } from "@/src/shared/domain/fpy";
 
-const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-const FAMILIES = ["Todos", "Battery", "Adapter", "LED Driver", "SMT", "Modem", "TP-Link", "Outros"];
-const number = (value: number) => value.toLocaleString("pt-BR");
-const percent = (value: number | null) => value === null ? "—" : value.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
-const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-const FPY_TARGET = 98.5;
-const shortLabel = (value: string, length = 22) => value.length > length ? `${value.slice(0, length - 1)}…` : value;
-
-function familyOf(entry: Pick<Entry, "model" | "line" | "pn">) {
-  const value = normalize(`${entry.model} ${entry.line} ${entry.pn}`);
-  if (/BATTERY|BATERIA/.test(value)) return "Battery";
-  if (/ADAPTER|ADAPTADOR/.test(value)) return "Adapter";
-  if (/LED.?DRIVER|DRIVER|LED/.test(value)) return "LED Driver";
-  if (/\bSMT\b/.test(value)) return "SMT";
-  if (/MODEM/.test(value)) return "Modem";
-  if (/TP.?LINK|TPLINK/.test(value)) return "TP-Link";
-  return "Outros";
-}
-
-type Metric = { name: string; production: number; defects: number; fpy: number | null; index: number | null };
-
-function aggregate(groups: Group[], key: (group: Group) => string): Metric[] {
-  const result = new Map<string, { name: string; production: number; defects: number }>();
-  for (const group of groups) {
-    const name = key(group);
-    const current = result.get(name) || { name, production: 0, defects: 0 };
-    current.production += group.production || 0;
-    current.defects += group.defects;
-    result.set(name, current);
-  }
-  return [...result.values()].map((item) => ({
-    ...item,
-    fpy: item.production > 0 && item.defects <= item.production ? Number((((item.production - item.defects) / item.production) * 100).toFixed(2)) : null,
-    index: item.production > 0 ? Number(((item.defects / item.production) * 100).toFixed(2)) : null,
-  }));
-}
-
-type TooltipItem = { name?: string; value?: number; color?: string };
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipItem[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  return <div className="dashboard-tooltip"><b>{label}</b>{payload.map((item) => <span key={item.name} style={{ color: item.color }}>{item.name}: {item.name === "Produção" || item.name === "Defeitos" ? number(Number(item.value)) : percent(Number(item.value))}</span>)}</div>;
-}
-
-function YieldChart({ data, title, subtitle }: { data: Array<Metric & { label?: string }>; title: string; subtitle: string }) {
-  const gradient = `yield-${title.replace(/\W/g, "")}`;
-  return <section className="panel chart-card">
-    <div className="panel-head"><div><h2>{title}</h2><span>{subtitle}</span></div></div>
-    <div className="chart-area powerbi-chart"><ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 16, right: 16, left: -12, bottom: 4 }}>
-        <defs><linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f49a39" stopOpacity={0.55} /><stop offset="100%" stopColor="#f49a39" stopOpacity={0.12} /></linearGradient></defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e8eb" />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={12} />
-        <YAxis domain={["dataMin - 1", 100]} tickFormatter={(value) => value + "%"} tick={{ fontSize: 11 }} />
-        <ReferenceLine y={98.5} stroke="#e45252" strokeDasharray="5 4" />
-        <Tooltip content={<ChartTooltip />} />
-        <Area type="monotone" dataKey="fpy" name="FPY" stroke="#ef881b" strokeWidth={3} fill={`url(#${gradient})`} dot={{ r: 4, fill: "#ef881b" }} connectNulls />
-      </AreaChart>
-    </ResponsiveContainer></div>
-  </section>;
-}
-
-type Ranking = { name: string; quantity: number; index: number | null; fpy?: number | null };
-function RankingTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ payload?: Ranking }>; label?: string }) {
-  const item = payload?.[0]?.payload;
-  if (!active || !item) return null;
-  return <div className="dashboard-tooltip ranking-tooltip"><b>{label}</b><span>Índice de falhas: {percent(item.index)}</span><span>Quantidade: {number(item.quantity)}</span></div>;
-}
-
-function RankingChart({ data, title, subtitle, empty }: { data: Ranking[]; title: string; subtitle: string; empty: string }) {
-  return <section className="panel chart-card ranking-card">
-    <div className="panel-head"><div><h2>{title}</h2><span>{subtitle}</span></div></div>
-    {data.length ? <div className="chart-area ranking-chart"><ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} layout="vertical" margin={{ top: 8, right: 48, left: 10, bottom: 8 }} barCategoryGap="24%">
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e4e8eb" />
-        <XAxis type="number" tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey="name" width={122} tickFormatter={(value) => shortLabel(String(value))} tick={{ fontSize: 11, fill: "#4d5a66" }} axisLine={false} tickLine={false} />
-        <Tooltip content={<RankingTooltip />} cursor={{ fill: "#fff3e6" }} />
-        <Bar dataKey="index" name="Índice de falhas" fill="#ef9a3d" radius={[0, 4, 4, 0]} maxBarSize={27}>
-          <LabelList dataKey="index" position="right" formatter={(value) => `${Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`} fill="#6a5138" fontSize={11} />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer></div> : <div className="chart-empty">{empty}</div>}
-  </section>;
-}
+import { MONTHS, FAMILIES, FPY_TARGET, number, percent, normalize, shortLabel, familyOf, aggregate } from "../../application/analytics/metrics";
+import { YieldChart, RankingChart } from "./charts";
 
 export default function AnalyticsDashboard({ entries, year, onYearChange }: { entries: Entry[]; year: string; onYearChange: (year: string) => void }) {
   const [family, setFamily] = useState("Todos");
